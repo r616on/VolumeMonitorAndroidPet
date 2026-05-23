@@ -1,5 +1,45 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Material 3 Light Theme Colors -->
+    <color name="seed">#FF1B5E96</color>
+    <color name="md_theme_light_primary">#FF1B5E96</color>
+    <color name="md_theme_light_onPrimary">#FFFFFFFF</color>
+    <color name="md_theme_light_primaryContainer">#FFD1E4FF</color>
+    <color name="md_theme_light_onPrimaryContainer">#FF001D36</color>
+    <color name="md_theme_light_secondary">#FF00897B</color>
+    <color name="md_theme_light_onSecondary">#FFFFFFFF</color>
+    <color name="md_theme_light_secondaryContainer">#FFA7F5EC</color>
+    <color name="md_theme_light_onSecondaryContainer">#FF00201C</color>
+    <color name="md_theme_light_tertiary">#FF7C4DFF</color>
+    <color name="md_theme_light_onTertiary">#FFFFFFFF</color>
+    <color name="md_theme_light_tertiaryContainer">#FFEADCFF</color>
+    <color name="md_theme_light_onTertiaryContainer">#FF27005A</color>
+    <color name="md_theme_light_error">#FFBA1A1A</color>
+    <color name="md_theme_light_surface">#FFFDFBFF</color>
+    <color name="md_theme_light_onSurface">#FF1A1C1E</color>
+    <color name="md_theme_light_surfaceVariant">#FFDFE2EB</color>
+    <color name="md_theme_light_onSurfaceVariant">#FF43474E</color>
+
+    <!-- Material 3 Dark Theme Colors -->
+    <color name="md_theme_dark_primary">#FF9ECAFF</color>
+    <color name="md_theme_dark_onPrimary">#FF003258</color>
+    <color name="md_theme_dark_primaryContainer">#FF00477B</color>
+    <color name="md_theme_dark_onPrimaryContainer">#FFD1E4FF</color>
+    <color name="md_theme_dark_secondary">#FF8BD8CC</color>
+    <color name="md_theme_dark_onSecondary">#FF004640</color>
+    <color name="md_theme_dark_secondaryContainer">#FF00635A</color>
+    <color name="md_theme_dark_onSecondaryContainer">#FFA7F5EC</color>
+    <color name="md_theme_dark_tertiary">#FFD0BCFF</color>
+    <color name="md_theme_dark_onTertiary">#FF4B1CA0</color>
+    <color name="md_theme_dark_tertiaryContainer">#FF6335C3</color>
+    <color name="md_theme_dark_onTertiaryContainer">#FFEADCFF</color>
+    <color name="md_theme_dark_error">#FFFFB4AB</color>
+    <color name="md_theme_dark_surface">#FF1A1C1E</color>
+    <color name="md_theme_dark_onSurface">#FFE2E2E6</color>
+    <color name="md_theme_dark_surfaceVariant">#FF43474E</color>
+    <color name="md_theme_dark_onSurfaceVariant">#FFC3C6CF</color>
+
+    <!-- Legacy -->
     <color name="purple_200">#FFBB86FC</color>
     <color name="purple_500">#FF6200EE</color>
     <color name="purple_700">#FF3700B3</color>
