@@ -78,6 +78,7 @@ class MainActivity : AppCompatActivity() {
 
         val adapter = TabsAdapter(this)
         viewPager.adapter = adapter
+        viewPager.isUserInputEnabled = false  // отключаем свайп — переход только по клику на таб
         viewPager.offscreenPageLimit = 2  // держим все 3 фрагмента в памяти
 
         TabLayoutMediator(tabLayout, viewPager) { tab, position ->
