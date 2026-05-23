@@ -1,4 +1,5 @@
 package com.example.volumemonitor
+import android.Manifest
 import android.app.PendingIntent
 import android.os.Build
 import android.content.BroadcastReceiver
@@ -42,6 +43,7 @@ class MainActivity : AppCompatActivity() {
     private var volumeService: VolumeMonitorService? = null
     private var isBound = false
     private lateinit var audioManager: AudioManager
+    private var presetButtonsRunnable: Runnable? = null
 
     private val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
     private val responseHistory = StringBuilder() // Для накопления истории
@@ -187,6 +189,9 @@ class MainActivity : AppCompatActivity() {
 
         initUIElements()
         audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1001)
+        }
         setupButtons()
         val savedBass = loadBassLevel()
         bassSeekBar.progress = savedBass + 6          // перевод -6..6 → 0..12
@@ -230,9 +235,33 @@ class MainActivity : AppCompatActivity() {
             unbindService(serviceConnection)
             isBound = false
         }
-        unregisterReceiver(volumeUpdateReceiver)
-        unregisterReceiver(usbStatusReceiver)
-        unregisterReceiver(arduinoResponseReceiver)
+        try {
+            unregisterReceiver(volumeUpdateReceiver)
+        } catch (e: Exception) { /* уже дерегистрирован */ }
+        try {
+            unregisterReceiver(usbStatusReceiver)
+        } catch (e: Exception) { /* уже дерегистрирован */ }
+        try {
+            unregisterReceiver(arduinoResponseReceiver)
+        } catch (e: Exception) { /* уже дерегистрирован */ }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        presetButtonsRunnable?.let { Handler(Looper.getMainLooper()).removeCallbacks(it) }
+        try {
+            unregisterReceiver(volumeUpdateReceiver)
+        } catch (e: Exception) { /* уже дерегистрирован */ }
+        try {
+            unregisterReceiver(usbStatusReceiver)
+        } catch (e: Exception) { /* уже дерегистрирован */ }
+        try {
+            unregisterReceiver(arduinoResponseReceiver)
+        } catch (e: Exception) { /* уже дерегистрирован */ }
+        if (isBound) {
+            unbindService(serviceConnection)
+            isBound = false
+        }
     }
 
     private fun initUIElements() {
@@ -260,11 +289,13 @@ class MainActivity : AppCompatActivity() {
             requestPresetButton.isEnabled = false
             changePresetButton.isEnabled = false
 
-            // Через 2 секунды разблокируем
-            Handler(Looper.getMainLooper()).postDelayed({
+            // Через 3 секунды разблокируем
+            presetButtonsRunnable?.let { Handler(Looper.getMainLooper()).removeCallbacks(it) }
+            presetButtonsRunnable = Runnable {
                 requestPresetButton.isEnabled = true
                 changePresetButton.isEnabled = true
-            }, 3000)
+            }
+            Handler(Looper.getMainLooper()).postDelayed(presetButtonsRunnable!!, 3000)
         }
         requestPresetButton.setOnClickListener {
             volumeService?.sendCommand("{\"command\":\"get_preset\"}")
@@ -272,19 +303,27 @@ class MainActivity : AppCompatActivity() {
             requestPresetButton.isEnabled = false
             changePresetButton.isEnabled = false
 
-            // Через 2 секунды разблокируем
-            Handler(Looper.getMainLooper()).postDelayed({
+            // Через 3 секунды разблокируем
+            presetButtonsRunnable?.let { Handler(Looper.getMainLooper()).removeCallbacks(it) }
+            presetButtonsRunnable = Runnable {
                 requestPresetButton.isEnabled = true
                 changePresetButton.isEnabled = true
-            }, 3000)
+            }
+            Handler(Looper.getMainLooper()).postDelayed(presetButtonsRunnable!!, 3000)
             Toast.makeText(this, "Запрос пресета отправлен", Toast.LENGTH_SHORT).show()
         }
     }
 
     private fun registerReceivers() {
-        registerReceiver(volumeUpdateReceiver, IntentFilter("VOLUME_UPDATED"))
-        registerReceiver(usbStatusReceiver, IntentFilter("USB_STATUS_UPDATED"))
-        registerReceiver(arduinoResponseReceiver, IntentFilter("ARDUINO_RESPONSE"))
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(volumeUpdateReceiver, IntentFilter("VOLUME_UPDATED"), RECEIVER_NOT_EXPORTED)
+            registerReceiver(usbStatusReceiver, IntentFilter("USB_STATUS_UPDATED"), RECEIVER_NOT_EXPORTED)
+            registerReceiver(arduinoResponseReceiver, IntentFilter("ARDUINO_RESPONSE"), RECEIVER_NOT_EXPORTED)
+        } else {
+            registerReceiver(volumeUpdateReceiver, IntentFilter("VOLUME_UPDATED"))
+            registerReceiver(usbStatusReceiver, IntentFilter("USB_STATUS_UPDATED"))
+            registerReceiver(arduinoResponseReceiver, IntentFilter("ARDUINO_RESPONSE"))
+        }
         Log.d(TAG, "Broadcast Receiver'ы зарегистрированы")
     }
 
@@ -315,11 +354,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateUsbStatus() {
-        val status = if (isBound && volumeService != null) {
-            volumeService!!.usbStatus
-        } else {
-            "Сервис не доступен"
-        }
+        val status = volumeService?.usbStatus ?: "Сервис не доступен"
         usbStatusTextView.text = "Статус USB: $status"
     }
 }

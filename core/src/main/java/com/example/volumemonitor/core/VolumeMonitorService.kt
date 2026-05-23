@@ -29,6 +29,7 @@ class VolumeMonitorService : Service() {
     private val ACTION_USB_PERMISSION = "com.example.volumemonitor.USB_PERMISSION"
     private val NOTIFICATION_ID = 1001
     private val serialBuffer = StringBuilder()
+    private val bufferLock = Any()
     private var audioManager: AudioManager? = null
     private var usbManager: UsbManager? = null
     private var serialPort: UsbSerialPort? = null
@@ -50,19 +51,21 @@ class VolumeMonitorService : Service() {
     private val serialListener = object : SerialInputOutputManager.Listener {
         override fun onNewData(data: ByteArray) {
             val chunk = String(data, Charsets.UTF_8)
-            serialBuffer.append(chunk)
+            synchronized(bufferLock) {
+                serialBuffer.append(chunk)
 
-            // Обрабатываем все полные строки в буфере
-            var index: Int
-            while (serialBuffer.indexOf("\n").also { index = it } >= 0) {
-                val line = serialBuffer.substring(0, index).trim()
-                serialBuffer.delete(0, index + 1)
+                // Обрабатываем все полные строки в буфере
+                var index: Int
+                while (serialBuffer.indexOf("\n").also { index = it } >= 0) {
+                    val line = serialBuffer.substring(0, index).trim()
+                    serialBuffer.delete(0, index + 1)
 
-                if (line.isNotEmpty()) {
-                    Log.d(TAG, "Полная строка от Arduino: $line")
-                    val intent = Intent("ARDUINO_RESPONSE")
-                    intent.putExtra("response", line)
-                    sendBroadcast(intent)
+                    if (line.isNotEmpty()) {
+                        Log.d(TAG, "Полная строка от Arduino: $line")
+                        val intent = Intent("ARDUINO_RESPONSE")
+                        intent.putExtra("response", line)
+                        sendBroadcast(intent)
+                    }
                 }
             }
         }
@@ -81,6 +84,15 @@ class VolumeMonitorService : Service() {
     }
 
     // USB Receiver
+    @Suppress("DEPRECATION")
+    private fun getUsbDeviceExtra(intent: Intent): UsbDevice? {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            intent.getParcelableExtra(UsbManager.EXTRA_DEVICE, UsbDevice::class.java)
+        } else {
+            intent.getParcelableExtra(UsbManager.EXTRA_DEVICE)
+        }
+    }
+
     private val usbReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             val action = intent.action
@@ -88,7 +100,7 @@ class VolumeMonitorService : Service() {
             when (action) {
                 ACTION_USB_PERMISSION -> {
                     synchronized(this) {
-                        val device = intent.getParcelableExtra<UsbDevice>(UsbManager.EXTRA_DEVICE)
+                        val device = getUsbDeviceExtra(intent)
                         if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
                             device?.let {
                                 Log.i(TAG, "USB разрешение получено для: ${it.deviceName}")
@@ -105,7 +117,7 @@ class VolumeMonitorService : Service() {
                     }
                 }
                 UsbManager.ACTION_USB_DEVICE_ATTACHED -> {
-                    val device = intent.getParcelableExtra<UsbDevice>(UsbManager.EXTRA_DEVICE)
+                    val device = getUsbDeviceExtra(intent)
                     device?.let {
                         Log.i(TAG, "USB устройство подключено: ${it.deviceName}")
                         val saved = loadSavedDevice()
@@ -125,7 +137,7 @@ class VolumeMonitorService : Service() {
                     }
                 }
                 UsbManager.ACTION_USB_DEVICE_DETACHED -> {
-                    val device = intent.getParcelableExtra<UsbDevice>(UsbManager.EXTRA_DEVICE)
+                    val device = getUsbDeviceExtra(intent)
                     if (device?.deviceId == selectedDevice?.deviceId) {
                         Log.i(TAG, "Выбранное USB устройство отключено")
                         usbStatus = "Устройство отключено"
@@ -209,10 +221,20 @@ class VolumeMonitorService : Service() {
             addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED)
             addAction(UsbManager.ACTION_USB_DEVICE_DETACHED)
         }
-        registerReceiver(usbReceiver, usbFilter)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(usbReceiver, usbFilter, RECEIVER_NOT_EXPORTED)
+        } else {
+            registerReceiver(usbReceiver, usbFilter)
+        }
 
+        // TODO: VOLUME_CHANGED_ACTION не доставляется фоновым приложениям на Android 15+ (API 35).
+        // При повышении targetSdk до 35 перейти на OnAudioVolumeChangedListener.
         val volumeFilter = IntentFilter("android.media.VOLUME_CHANGED_ACTION")
-        registerReceiver(volumeReceiver, volumeFilter)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(volumeReceiver, volumeFilter, RECEIVER_NOT_EXPORTED)
+        } else {
+            registerReceiver(volumeReceiver, volumeFilter)
+        }
 
         previousVolume = audioManager?.getStreamVolume(AudioManager.STREAM_MUSIC) ?: 0
         Log.d(TAG, "Сервис создан успешно")
@@ -263,9 +285,14 @@ class VolumeMonitorService : Service() {
             .setSmallIcon(android.R.drawable.ic_dialog_info) // замените на свою иконку
             .setOngoing(true)
 
-        notificationPendingIntent?.let {
-            builder.setContentIntent(it)
+        val pendingIntent = notificationPendingIntent ?: run {
+            val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
+            if (launchIntent != null) {
+                PendingIntent.getActivity(this, 0, launchIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+            } else null
         }
+        pendingIntent?.let { builder.setContentIntent(it) }
 
         return builder.build()
     }
@@ -293,7 +320,7 @@ class VolumeMonitorService : Service() {
             }
             val permissionIntent = PendingIntent.getBroadcast(
                 this,
-                0,
+                device.deviceId,
                 Intent(ACTION_USB_PERMISSION),
                 flags
             )

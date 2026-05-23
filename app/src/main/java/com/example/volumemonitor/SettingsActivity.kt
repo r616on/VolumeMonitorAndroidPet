@@ -48,12 +48,21 @@ class SettingsActivity : AppCompatActivity() {
     private val connectedUsbDevices: MutableList<UsbDevice> = ArrayList()
     private var selectedUsbDevice: UsbDevice? = null
 
+    @Suppress("DEPRECATION")
+    private fun getUsbDeviceExtra(intent: Intent): UsbDevice? {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            intent.getParcelableExtra(UsbManager.EXTRA_DEVICE, UsbDevice::class.java)
+        } else {
+            intent.getParcelableExtra(UsbManager.EXTRA_DEVICE)
+        }
+    }
+
     private val usbReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             when (intent.action) {
                 USB_PERMISSION_ACTION -> {
                     synchronized(this) {
-                        val device: UsbDevice? = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE)
+                        val device: UsbDevice? = getUsbDeviceExtra(intent)
                         if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
                             device?.let {
                                 Log.d(TAG, "Permission granted for device ${it.deviceName}")
@@ -110,7 +119,20 @@ class SettingsActivity : AppCompatActivity() {
 
     override fun onPause() {
         super.onPause()
-        unregisterReceiver(usbReceiver)
+        try {
+            unregisterReceiver(usbReceiver)
+        } catch (e: Exception) { /* уже дерегистрирован */ }
+        if (isBound) {
+            unbindService(serviceConnection)
+            isBound = false
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        try {
+            unregisterReceiver(usbReceiver)
+        } catch (e: Exception) { /* уже дерегистрирован */ }
         if (isBound) {
             unbindService(serviceConnection)
             isBound = false
@@ -220,7 +242,11 @@ $permissionText"""
             addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED)
             addAction(UsbManager.ACTION_USB_DEVICE_DETACHED)
         }
-        registerReceiver(usbReceiver, filter)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(usbReceiver, filter, RECEIVER_NOT_EXPORTED)
+        } else {
+            registerReceiver(usbReceiver, filter)
+        }
         Log.d(TAG, "Broadcast Receiver зарегистрирован")
     }
 
@@ -229,7 +255,11 @@ $permissionText"""
             try {
                 val serviceIntent = Intent(this, VolumeMonitorService::class.java)
                 // Запускаем сервис, чтобы он оставался в памяти
-                startService(serviceIntent)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    startForegroundService(serviceIntent)
+                } else {
+                    startService(serviceIntent)
+                }
                 bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE)
                 Log.d(TAG, "Сервис запущен и привязан")
             } catch (e: Exception) {
@@ -284,7 +314,7 @@ $permissionText"""
                     } else {
                         PendingIntent.FLAG_UPDATE_CURRENT
                     }
-                    val permissionIntent = PendingIntent.getBroadcast(this, 0, Intent(USB_PERMISSION_ACTION), flags)
+                    val permissionIntent = PendingIntent.getBroadcast(this, it.deviceId, Intent(USB_PERMISSION_ACTION), flags)
                     usbManager.requestPermission(it, permissionIntent)
                     requested++
                 } catch (e: Exception) {
