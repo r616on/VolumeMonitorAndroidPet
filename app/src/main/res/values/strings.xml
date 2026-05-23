@@ -1,3 +1,21 @@
 <resources>
-    <string name="app_name">VolumeMonitor</string>
+    <string name="app_name">Монитор громкости</string>
+    <string name="volume_label">Громкость: %1$d / %2$d</string>
+    <string name="volume_placeholder">Громкость: --</string>
+    <string name="json_placeholder">JSON: {&quot;volume&quot;:--}</string>
+    <string name="usb_status_label">Статус USB: %s</string>
+    <string name="usb_status_connected">ПОДКЛЮЧЕНО</string>
+    <string name="usb_status_disconnected">НЕТ ПОДКЛЮЧЕНИЯ</string>
+    <string name="usb_status_service_unavailable">Сервис не доступен</string>
+    <string name="arduino_placeholder">Arduino: --</string>
+    <string name="service_background_notice">Сервис работает в фоне</string>
+    <string name="bass_label">Bass:</string>
+    <string name="change_preset">Сменить пресет</string>
+    <string name="request_preset">Запросить пресет</string>
+    <string name="preset_label">Пресет</string>
+    <string name="preset_request_sent">Запрос пресета отправлен</string>
+    <string name="service_started">Сервис запущен</string>
+    <string name="settings_navigation_label">Настройки</string>
+    <string name="notification_title">Монитор громкости</string>
+    <string name="notification_text">Отслеживание громкости активно</string>
 </resources>
