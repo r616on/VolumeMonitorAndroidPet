@@ -12,10 +12,9 @@ class BootReceiver : BroadcastReceiver() {
         if (intent.action == Intent.ACTION_BOOT_COMPLETED) {
             Log.d("BootReceiver", "Загрузка завершена, запускаем сервис")
             val serviceIntent = Intent(context, VolumeMonitorService::class.java)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startForegroundService(serviceIntent)
-            } else {
-                context.startService(serviceIntent)
+            when {
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.O -> context.startForegroundService(serviceIntent)
+                else -> context.startService(serviceIntent)
             }
         }
     }

@@ -21,19 +21,22 @@ import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
+import com.example.volumemonitor.core.Constants
 import com.example.volumemonitor.core.VolumeMonitorService
+import com.example.volumemonitor.core.event.AppEvent
+import com.example.volumemonitor.core.event.AppEventBus
+import com.example.volumemonitor.core.usb.UsbPortState
+import com.example.volumemonitor.core.usb.displayText
+import com.example.volumemonitor.core.repository.SettingsRepository
+import com.example.volumemonitor.core.repository.SettingsRepositoryImpl
+import kotlinx.coroutines.launch
 
 class SettingsActivity : AppCompatActivity() {
 
     private val TAG = "SettingsActivity"
 
-    companion object {
-        private const val PREFS_NAME = "UsbDevicePrefs"
-        private const val KEY_VENDOR_ID = "vendorId"
-        private const val KEY_PRODUCT_ID = "productId"
-        private const val USB_PERMISSION_ACTION = "com.example.volumemonitor.USB_PERMISSION"
-    }
-
+    // ── View ──
     private lateinit var usbStatusTextView: TextView
     private lateinit var selectedDeviceTextView: TextView
     private lateinit var usbDevicesSpinner: Spinner
@@ -41,19 +44,32 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var selectDeviceButton: Button
     private lateinit var usbPermissionButton: Button
 
+    // ── Иммутабельное состояние ──
+    private val usbManager: UsbManager by lazy { getSystemService(Context.USB_SERVICE) as UsbManager }
+    private val settingsRepository: SettingsRepository by lazy { SettingsRepositoryImpl(this) }
+
     private var volumeService: VolumeMonitorService? = null
     private var isBound = false
-    private lateinit var usbManager: UsbManager
 
-    private val connectedUsbDevices: MutableList<UsbDevice> = ArrayList()
+    private val connectedUsbDevices = mutableListOf<UsbDevice>()
     private var selectedUsbDevice: UsbDevice? = null
+    private var lastUsbStatus: UsbPortState = UsbPortState.Initializing
+
+    @Suppress("DEPRECATION")
+    private fun getUsbDeviceExtra(intent: Intent): UsbDevice? {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            intent.getParcelableExtra(UsbManager.EXTRA_DEVICE, UsbDevice::class.java)
+        } else {
+            intent.getParcelableExtra(UsbManager.EXTRA_DEVICE)
+        }
+    }
 
     private val usbReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             when (intent.action) {
-                USB_PERMISSION_ACTION -> {
+                Constants.ACTION_USB_PERMISSION -> {
                     synchronized(this) {
-                        val device: UsbDevice? = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE)
+                        val device: UsbDevice? = getUsbDeviceExtra(intent)
                         if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
                             device?.let {
                                 Log.d(TAG, "Permission granted for device ${it.deviceName}")
@@ -94,11 +110,18 @@ class SettingsActivity : AppCompatActivity() {
         setContentView(R.layout.activity_settings)
 
         initUIElements()
-
-        usbManager = getSystemService(Context.USB_SERVICE) as UsbManager
-
         setupButtons()
         setupSpinner()
+
+        // Подписка на события USB-статуса через AppEventBus
+        lifecycleScope.launch {
+            AppEventBus.events.collect { event ->
+                if (event is AppEvent.UsbStatusChanged) {
+                    lastUsbStatus = event.status
+                    updateUsbStatus()
+                }
+            }
+        }
     }
 
     override fun onResume() {
@@ -110,7 +133,20 @@ class SettingsActivity : AppCompatActivity() {
 
     override fun onPause() {
         super.onPause()
-        unregisterReceiver(usbReceiver)
+        try {
+            unregisterReceiver(usbReceiver)
+        } catch (e: Exception) { /* уже дерегистрирован */ }
+        if (isBound) {
+            unbindService(serviceConnection)
+            isBound = false
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        try {
+            unregisterReceiver(usbReceiver)
+        } catch (e: Exception) { /* уже дерегистрирован */ }
         if (isBound) {
             unbindService(serviceConnection)
             isBound = false
@@ -155,35 +191,30 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun saveSelectedUsbDevice(device: UsbDevice) {
-        getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit().apply {
-            putInt(KEY_VENDOR_ID, device.vendorId)
-            putInt(KEY_PRODUCT_ID, device.productId)
-            apply()
-        }
+        settingsRepository.saveDevice(device.vendorId, device.productId)
         Log.d(TAG, "Сохранено устройство: VID=${device.vendorId}, PID=${device.productId}")
     }
 
     private fun loadAndAutoselectDevice() {
-        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val vendorId = prefs.getInt(KEY_VENDOR_ID, -1)
-        val productId = prefs.getInt(KEY_PRODUCT_ID, -1)
+        val saved = settingsRepository.getSavedDevice() ?: run {
+            Log.d(TAG, "Нет сохраненных устройств для авто-выбора.")
+            updateSelectedDeviceInfo()
+            return
+        }
+        val (vendorId, productId) = saved
 
-        if (vendorId != -1 && productId != -1) {
-            val deviceIndex = connectedUsbDevices.indexOfFirst { it.vendorId == vendorId && it.productId == productId }
-            if (deviceIndex != -1) {
-                if (usbDevicesSpinner.selectedItemPosition != deviceIndex + 1) {
-                    val device = connectedUsbDevices[deviceIndex]
-                    Log.d(TAG, "Найдено сохраненное устройство: ${device.deviceName}")
-                    usbDevicesSpinner.setSelection(deviceIndex + 1, true)
-                    selectedUsbDevice = device
-                    volumeService?.setSelectedUsbDevice(selectedUsbDevice)
-                    Toast.makeText(this, "Авто-выбор: ${device.deviceName}", Toast.LENGTH_SHORT).show()
-                }
-            } else {
-                Log.d(TAG, "Сохраненное устройство (VID=$vendorId, PID=$productId) не найдено.")
+        val deviceIndex = connectedUsbDevices.indexOfFirst { it.vendorId == vendorId && it.productId == productId }
+        if (deviceIndex != -1) {
+            if (usbDevicesSpinner.selectedItemPosition != deviceIndex + 1) {
+                val device = connectedUsbDevices[deviceIndex]
+                Log.d(TAG, "Найдено сохраненное устройство: ${device.deviceName}")
+                usbDevicesSpinner.setSelection(deviceIndex + 1, true)
+                selectedUsbDevice = device
+                volumeService?.setSelectedUsbDevice(selectedUsbDevice)
+                Toast.makeText(this, "Авто-выбор: ${device.deviceName}", Toast.LENGTH_SHORT).show()
             }
         } else {
-            Log.d(TAG, "Нет сохраненных устройств для авто-выбора.")
+            Log.d(TAG, "Сохраненное устройство (VID=$vendorId, PID=$productId) не найдено.")
         }
         updateSelectedDeviceInfo()
     }
@@ -216,11 +247,15 @@ $permissionText"""
 
     private fun registerReceivers() {
         val filter = IntentFilter().apply {
-            addAction(USB_PERMISSION_ACTION)
+            addAction(Constants.ACTION_USB_PERMISSION)
             addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED)
             addAction(UsbManager.ACTION_USB_DEVICE_DETACHED)
         }
-        registerReceiver(usbReceiver, filter)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(usbReceiver, filter, RECEIVER_NOT_EXPORTED)
+        } else {
+            registerReceiver(usbReceiver, filter)
+        }
         Log.d(TAG, "Broadcast Receiver зарегистрирован")
     }
 
@@ -228,8 +263,11 @@ $permissionText"""
         if (!isBound) {
             try {
                 val serviceIntent = Intent(this, VolumeMonitorService::class.java)
-                // Запускаем сервис, чтобы он оставался в памяти
-                startService(serviceIntent)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    startForegroundService(serviceIntent)
+                } else {
+                    startService(serviceIntent)
+                }
                 bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE)
                 Log.d(TAG, "Сервис запущен и привязан")
             } catch (e: Exception) {
@@ -239,8 +277,7 @@ $permissionText"""
     }
 
     private fun updateUsbStatus() {
-        val status = if (isBound && volumeService?.isUsbConnected == true) "ПОДКЛЮЧЕНО" else "НЕТ ПОДКЛЮЧЕНИЯ"
-        usbStatusTextView.text = "Статус USB: $status"
+        usbStatusTextView.text = "Статус USB: ${lastUsbStatus.displayText}"
     }
 
     private fun scanUsbDevices() {
@@ -255,13 +292,13 @@ $permissionText"""
         if (connectedUsbDevices.isEmpty()) {
             adapter.add("Нет USB устройств")
         } else {
-            connectedUsbDevices.forEachIndexed { index, device ->
+            val deviceNames = connectedUsbDevices.mapIndexed { index, device ->
                 val hasPermission = usbManager.hasPermission(device)
                 val permissionStatus = if (hasPermission) "[✅]" else "[❌]"
                 val isArduino = if (device.vendorId == 0x2341 && device.productId == 0x0043) " [Arduino Nano]" else ""
-                val itemText = "${index + 1}. ${device.deviceName} $permissionStatus$isArduino"
-                adapter.add(itemText)
+                "${index + 1}. ${device.deviceName} $permissionStatus$isArduino"
             }
+            adapter.addAll(deviceNames)
         }
         adapter.notifyDataSetChanged()
 
@@ -275,23 +312,21 @@ $permissionText"""
             return
         }
 
-        var requested = 0
-        connectedUsbDevices.forEach {
-            if (!usbManager.hasPermission(it)) {
-                try {
-                    val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
-                    } else {
-                        PendingIntent.FLAG_UPDATE_CURRENT
-                    }
-                    val permissionIntent = PendingIntent.getBroadcast(this, 0, Intent(USB_PERMISSION_ACTION), flags)
-                    usbManager.requestPermission(it, permissionIntent)
-                    requested++
-                } catch (e: Exception) {
-                    Log.e(TAG, "Ошибка запроса разрешения для ${it.deviceName}: ${e.message}")
+        val requested = connectedUsbDevices.filter { !usbManager.hasPermission(it) }.onEach { device ->
+            try {
+                val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
+                } else {
+                    PendingIntent.FLAG_UPDATE_CURRENT
                 }
+                val permissionIntent = PendingIntent.getBroadcast(
+                    this, device.deviceId, Intent(Constants.ACTION_USB_PERMISSION), flags
+                )
+                usbManager.requestPermission(device, permissionIntent)
+            } catch (e: Exception) {
+                Log.e(TAG, "Ошибка запроса разрешения для ${device.deviceName}: ${e.message}")
             }
-        }
+        }.size
 
         if (requested > 0) {
             Toast.makeText(this, "Отправлены запросы на разрешение для $requested устройств(а)", Toast.LENGTH_SHORT).show()
