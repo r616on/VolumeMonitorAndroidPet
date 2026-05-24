@@ -113,6 +113,7 @@ class VolumeMonitorService : Service() {
     fun sendCommand(commandJson: String) {
         val framed = commandSerializer.frame(commandJson)
         portManager.send(framed)
+        AppEventBus.tryEmit(AppEvent.SerialDataSent(commandJson))
     }
 
     private fun sendVolumeData(targetVolume: Int) {
@@ -120,6 +121,7 @@ class VolumeMonitorService : Service() {
         val json = commandSerializer.serialize(cmd)
         val framed = commandSerializer.frame(json)
         portManager.send(framed)
+        AppEventBus.tryEmit(AppEvent.SerialDataSent(json))
     }
 
     override fun onCreate() {

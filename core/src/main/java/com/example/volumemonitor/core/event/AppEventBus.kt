@@ -26,6 +26,9 @@ sealed class AppEvent {
     /** Статус USB-подключения */
     data class UsbStatusChanged(val status: UsbPortState) : AppEvent()
 
-    /** Сырая строка от Arduino */
+    /** Сырая строка от Arduino (получено из порта) */
     data class ArduinoResponse(val rawLine: String) : AppEvent()
+
+    /** Команда/данные, отправленные в serial port */
+    data class SerialDataSent(val rawLine: String) : AppEvent()
 }
