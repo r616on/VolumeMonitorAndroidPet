@@ -15,6 +15,8 @@ import androidx.fragment.app.Fragment
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
 import com.example.volumemonitor.core.VolumeMonitorService
+import com.example.volumemonitor.ui.ButtonSettingsFragment
+import com.example.volumemonitor.ui.GeneralSettingsFragment
 import com.example.volumemonitor.ui.LogFragment
 import com.example.volumemonitor.ui.MainFragment
 import com.example.volumemonitor.ui.UsbSettingsFragment
@@ -79,13 +81,15 @@ class MainActivity : AppCompatActivity() {
         val adapter = TabsAdapter(this)
         viewPager.adapter = adapter
         viewPager.isUserInputEnabled = false  // отключаем свайп — переход только по клику на таб
-        viewPager.offscreenPageLimit = 2  // держим все 3 фрагмента в памяти
+        viewPager.offscreenPageLimit = 4  // держим все 5 фрагментов в памяти
 
         TabLayoutMediator(tabLayout, viewPager) { tab, position ->
             tab.text = when (position) {
                 0 -> "Главная"
                 1 -> "Лог"
-                2 -> "USB"
+                2 -> "Общие"
+                3 -> "Кнопки"
+                4 -> "USB"
                 else -> ""
             }
         }.attach()
@@ -127,12 +131,14 @@ class MainActivity : AppCompatActivity() {
     // ── Адаптер табов ──
 
     private class TabsAdapter(activity: MainActivity) : FragmentStateAdapter(activity) {
-        override fun getItemCount(): Int = 3
+        override fun getItemCount(): Int = 5
 
         override fun createFragment(position: Int): Fragment = when (position) {
             0 -> MainFragment()
             1 -> LogFragment()
-            2 -> UsbSettingsFragment()
+            2 -> GeneralSettingsFragment()
+            3 -> ButtonSettingsFragment()
+            4 -> UsbSettingsFragment()
             else -> throw IllegalArgumentException("Invalid position: $position")
         }
     }

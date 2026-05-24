@@ -9,6 +9,19 @@ object Constants {
     const val KEY_PRODUCT_ID = "productId"
     const val KEY_BASS_POSITION = "bass_position"
 
+    // ── Общие настройки ──
+    const val PREFS_NAME_GENERAL = "GeneralPrefs"
+    const val KEY_VOLUME_CONTROL_MODE = "volume_control_mode"
+
+    // ── Настройки кнопок ──
+    const val PREFS_NAME_BUTTONS = "ButtonPrefs"
+    const val KEY_BUTTON_VOLUME_UP = "button_volume_up"
+    const val KEY_BUTTON_VOLUME_DOWN = "button_volume_down"
+    const val KEY_MAX_VOLUME_VALUE = "max_volume_value"
+    const val KEY_BUTTON_CURRENT_VOLUME = "button_current_volume"
+    const val KEY_LONG_PRESS_DELAY_MS = "long_press_delay_ms"
+    const val KEY_BUTTON_LEARN_TIMEOUT_MS = "button_learn_timeout_ms"
+
     const val NOTIFICATION_CHANNEL_ID = "volume_monitor_channel"
     const val NOTIFICATION_ID = 1001
 
@@ -17,4 +30,10 @@ object Constants {
     const val MAX_VOLUME_TARGET = 255
     const val BASS_MAX_POSITION = 8
     const val BASS_DEFAULT_POSITION = 4
+
+    // ── Значения по умолчанию для кнопок ──
+    const val DEFAULT_MAX_VOLUME_VALUE = 15
+    const val DEFAULT_LONG_PRESS_DELAY_MS = 500L
+    const val DEFAULT_BUTTON_LEARN_TIMEOUT_MS = 2000L
+    const val LONG_PRESS_REPEAT_INTERVAL_MS = 200L
 }

@@ -135,6 +135,8 @@ class UsbSerialPortManager(
     }
 
     fun send(bytes: ByteArray) {
+        // Логируем всегда — для отладки, даже если USB не подключено
+        Log.d(TAG, "→ send: ${String(bytes, Charsets.UTF_8)} (connected=$isConnected)")
         synchronized(bufferLock) {
             if (!isConnected || serialPort == null) {
                 Log.w(TAG, "USB не подключено, данные не отправлены")

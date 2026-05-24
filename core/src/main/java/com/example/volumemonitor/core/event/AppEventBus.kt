@@ -1,5 +1,7 @@
 package com.example.volumemonitor.core.event
 
+import com.example.volumemonitor.core.model.ButtonAction
+import com.example.volumemonitor.core.model.VolumeControlMode
 import com.example.volumemonitor.core.usb.UsbPortState
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -31,4 +33,13 @@ sealed class AppEvent {
 
     /** Команда/данные, отправленные в serial port */
     data class SerialDataSent(val rawLine: String) : AppEvent()
+
+    /** Нажатие назначенной кнопки */
+    data class ButtonPressed(val action: ButtonAction) : AppEvent()
+
+    /** Смена режима управления громкостью */
+    data class VolumeControlModeChanged(val mode: VolumeControlMode) : AppEvent()
+
+    /** Настройки кнопок изменены — сервису нужно перезагрузить keyCode */
+    object ButtonSettingsChanged : AppEvent()
 }
