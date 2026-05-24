@@ -18,4 +18,5 @@
     <string name="settings_navigation_label">Настройки</string>
     <string name="notification_title">Монитор громкости</string>
     <string name="notification_text">Отслеживание громкости активно</string>
+    <string name="accessibility_service_description">Требуется для перехвата нажатий кнопок в фоновом режиме</string>
 </resources>
