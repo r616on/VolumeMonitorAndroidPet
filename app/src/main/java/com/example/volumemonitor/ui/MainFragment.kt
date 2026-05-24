@@ -20,7 +20,9 @@ import com.example.volumemonitor.R
 import com.example.volumemonitor.core.VolumeMonitorService
 import com.example.volumemonitor.core.event.AppEvent
 import com.example.volumemonitor.core.event.AppEventBus
+import com.example.volumemonitor.core.model.ButtonAction
 import com.example.volumemonitor.core.model.DeviceCommand
+import com.example.volumemonitor.core.model.VolumeControlMode
 import com.example.volumemonitor.core.repository.SettingsRepository
 import com.example.volumemonitor.core.repository.SettingsRepositoryImpl
 import com.example.volumemonitor.core.serialization.JsonCommandSerializer
@@ -51,6 +53,12 @@ class MainFragment : Fragment() {
     private var presetButtonsRunnable: Runnable? = null
     private var currentPreset: Int = 1
     private var lastUsbStatus: UsbPortState = UsbPortState.Initializing
+    private var currentControlMode: VolumeControlMode = VolumeControlMode.OBSERVER
+
+    // ── Локальный счётчик громкости для режима BUTTONS ──
+    /** Локальная громкость кнопок (не зависит от дебаунса SharedPreferences). */
+    private var localButtonVolume: Int = 0
+    private var localMaxButtonVolume: Int = 15
 
     private fun getService(): VolumeMonitorService? =
         (requireActivity() as? MainActivity)?.volumeService
@@ -125,6 +133,13 @@ class MainFragment : Fragment() {
             disablePresetButtonsTemporarily()
         }
 
+        // Инициализируем текущий режим и локальные счётчики из настроек
+        currentControlMode = settingsRepository.getVolumeControlMode()
+        if (currentControlMode == VolumeControlMode.BUTTONS) {
+            localButtonVolume = settingsRepository.getButtonCurrentVolume()
+            localMaxButtonVolume = settingsRepository.getMaxVolumeValue()
+        }
+
         // Подписка на события через SharedFlow (не блокирует главный поток, т.к. collect приостанавливается)
         viewLifecycleOwner.lifecycleScope.launch {
             AppEventBus.events.collect { event ->
@@ -141,10 +156,31 @@ class MainFragment : Fragment() {
                             presetTextView.text = "$preset"
                         }
                     }
-                    is AppEvent.SerialDataSent -> {}  // не обрабатывается в этом фрагменте
-                    is AppEvent.ButtonPressed -> {}
-                    is AppEvent.VolumeControlModeChanged -> {}
-                    AppEvent.ButtonSettingsChanged -> {}
+                    is AppEvent.SerialDataSent -> {}
+                    is AppEvent.ButtonPressed -> {
+                        if (currentControlMode == VolumeControlMode.BUTTONS) {
+                            // Локально инкрементируем/декрементируем без ожидания сохранения в SharedPreferences
+                            localButtonVolume = when (event.action) {
+                                ButtonAction.VOLUME_UP -> (localButtonVolume + 1).coerceIn(0, localMaxButtonVolume)
+                                ButtonAction.VOLUME_DOWN -> (localButtonVolume - 1).coerceIn(0, localMaxButtonVolume)
+                            }
+                            updateVolumeDisplay()
+                        }
+                    }
+                    is AppEvent.VolumeControlModeChanged -> {
+                        currentControlMode = event.mode
+                        if (event.mode == VolumeControlMode.BUTTONS) {
+                            localButtonVolume = settingsRepository.getButtonCurrentVolume()
+                            localMaxButtonVolume = settingsRepository.getMaxVolumeValue()
+                        }
+                        updateVolumeDisplay()
+                    }
+                    AppEvent.ButtonSettingsChanged -> {
+                        // При изменении настроек кнопок обновляем maxVolume
+                        if (currentControlMode == VolumeControlMode.BUTTONS) {
+                            localMaxButtonVolume = settingsRepository.getMaxVolumeValue()
+                        }
+                    }
                 }
             }
         }
@@ -177,9 +213,13 @@ class MainFragment : Fragment() {
     }
 
     private fun updateVolumeDisplay() {
-        val currentVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
-        val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
-        volumeTextView.text = "Громкость: $currentVolume / $maxVolume"
+        if (currentControlMode == VolumeControlMode.BUTTONS) {
+            volumeTextView.text = "Громкость: $localButtonVolume / $localMaxButtonVolume (кнопки)"
+        } else {
+            val currentVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
+            val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+            volumeTextView.text = "Громкость: $currentVolume / $maxVolume"
+        }
     }
 
     private fun updateUsbStatus() {

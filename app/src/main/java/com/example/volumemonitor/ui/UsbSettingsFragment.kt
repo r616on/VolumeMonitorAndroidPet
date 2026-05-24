@@ -138,8 +138,8 @@ class UsbSettingsFragment : Fragment() {
     }
 
     private fun setupSpinner() {
-        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, mutableListOf("-- Выберите устройство --"))
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        val adapter = ArrayAdapter(requireContext(), R.layout.spinner_item, mutableListOf("-- Выберите устройство --"))
+        adapter.setDropDownViewResource(R.layout.spinner_dropdown_item)
         usbDevicesSpinner.adapter = adapter
 
         usbDevicesSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
