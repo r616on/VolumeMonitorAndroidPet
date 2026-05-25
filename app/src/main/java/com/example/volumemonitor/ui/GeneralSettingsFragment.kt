@@ -5,8 +5,10 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import android.widget.RadioGroup
 import android.widget.TextView
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.example.volumemonitor.R
 import com.example.volumemonitor.core.event.AppEvent
@@ -27,6 +29,9 @@ class GeneralSettingsFragment : Fragment() {
 
     private lateinit var modeRadioGroup: RadioGroup
     private lateinit var modeDescriptionTextView: TextView
+    private lateinit var applyButton: Button
+    private var currentMode: VolumeControlMode = VolumeControlMode.OBSERVER
+    private var pendingMode: VolumeControlMode? = null
     private val settingsRepository: SettingsRepository by lazy {
         SettingsRepositoryImpl(requireContext())
     }
@@ -42,14 +47,17 @@ class GeneralSettingsFragment : Fragment() {
 
         modeRadioGroup = view.findViewById(R.id.modeRadioGroup)
         modeDescriptionTextView = view.findViewById(R.id.modeDescriptionTextView)
+        applyButton = view.findViewById(R.id.applyButton)
 
         // Восстанавливаем текущий режим
-        val currentMode = settingsRepository.getVolumeControlMode()
+        currentMode = settingsRepository.getVolumeControlMode()
+        pendingMode = currentMode
         when (currentMode) {
             VolumeControlMode.OBSERVER -> modeRadioGroup.check(R.id.radioObserver)
             VolumeControlMode.BUTTONS -> modeRadioGroup.check(R.id.radioButtons)
         }
         updateModeDescription(currentMode)
+        updateApplyButtonState()
 
         modeRadioGroup.setOnCheckedChangeListener { _, checkedId ->
             val selectedMode = when (checkedId) {
@@ -57,11 +65,26 @@ class GeneralSettingsFragment : Fragment() {
                 R.id.radioButtons -> VolumeControlMode.BUTTONS
                 else -> return@setOnCheckedChangeListener
             }
-            Log.d(TAG, "Выбран режим: $selectedMode")
-            settingsRepository.saveVolumeControlMode(selectedMode)
-            AppEventBus.tryEmit(AppEvent.VolumeControlModeChanged(selectedMode))
+            Log.d(TAG, "Выбран режим: $selectedMode (текущий: $currentMode)")
+            pendingMode = selectedMode
             updateModeDescription(selectedMode)
+            updateApplyButtonState()
         }
+
+        applyButton.setOnClickListener {
+            val modeToApply = pendingMode ?: return@setOnClickListener
+            Log.d(TAG, "Применение режима: $modeToApply")
+            settingsRepository.saveVolumeControlMode(modeToApply)
+            AppEventBus.tryEmit(AppEvent.VolumeControlModeChanged(modeToApply))
+            currentMode = modeToApply
+            updateApplyButtonState()
+            Toast.makeText(requireContext(), "Настройки применены", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun updateApplyButtonState() {
+        val hasChanges = pendingMode != null && pendingMode != currentMode
+        applyButton.isEnabled = hasChanges
     }
 
     private fun updateModeDescription(mode: VolumeControlMode) {

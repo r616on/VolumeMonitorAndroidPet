@@ -34,6 +34,7 @@
     <color name="md_theme_dark_tertiaryContainer">#FF6335C3</color>
     <color name="md_theme_dark_onTertiaryContainer">#FFEADCFF</color>
     <color name="md_theme_dark_error">#FFFFB4AB</color>
+    <color name="md_theme_dark_onError">#FF000000</color>
     <color name="md_theme_dark_surface">#FF1A1C1E</color>
     <color name="md_theme_dark_onSurface">#FFE2E2E6</color>
     <color name="md_theme_dark_surfaceVariant">#FF43474E</color>

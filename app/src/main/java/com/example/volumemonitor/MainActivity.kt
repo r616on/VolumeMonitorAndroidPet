@@ -21,7 +21,6 @@ import com.example.volumemonitor.ui.LogFragment
 import com.example.volumemonitor.ui.MainFragment
 import com.example.volumemonitor.ui.UsbSettingsFragment
 import com.google.android.material.tabs.TabLayout
-import com.google.android.material.tabs.TabLayoutMediator
 
 class MainActivity : AppCompatActivity() {
     private val TAG = "MainActivity"
@@ -83,16 +82,27 @@ class MainActivity : AppCompatActivity() {
         viewPager.isUserInputEnabled = false  // отключаем свайп — переход только по клику на таб
         viewPager.offscreenPageLimit = 4  // держим все 5 фрагментов в памяти
 
-        TabLayoutMediator(tabLayout, viewPager) { tab, position ->
-            tab.text = when (position) {
-                0 -> "Главная"
-                1 -> "Лог"
-                2 -> "Общие"
-                3 -> "Кнопки"
-                4 -> "USB"
-                else -> ""
+        // Настройка табов вручную (без TabLayoutMediator — отключаем анимацию переключения)
+        val tabTexts = arrayOf("Главная", "Лог", "Общие", "Кнопки", "USB")
+        for (text in tabTexts) {
+            tabLayout.addTab(tabLayout.newTab().setText(text))
+        }
+
+        // Клик по табу — переход без анимации
+        tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
+            override fun onTabSelected(tab: TabLayout.Tab) {
+                viewPager.setCurrentItem(tab.position, false)
             }
-        }.attach()
+            override fun onTabUnselected(tab: TabLayout.Tab) {}
+            override fun onTabReselected(tab: TabLayout.Tab) {}
+        })
+
+        // Синхронизация таба при программной смене страницы
+        viewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+            override fun onPageSelected(position: Int) {
+                tabLayout.selectTab(tabLayout.getTabAt(position))
+            }
+        })
 
         startAndBindService()
     }

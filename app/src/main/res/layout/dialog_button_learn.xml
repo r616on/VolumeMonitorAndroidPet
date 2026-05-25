@@ -43,14 +43,14 @@
 
         <Button
             android:id="@+id/learnCancelButton"
-            style="@style/Widget.Material3.Button.TextButton"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Отмена" />
 
         <Button
             android:id="@+id/learnOkButton"
-            style="@style/Widget.Material3.Button.TextButton"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="OK"
@@ -58,7 +58,7 @@
 
         <Button
             android:id="@+id/learnRetryButton"
-            style="@style/Widget.Material3.Button.TextButton"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Повторить"

@@ -1,5 +1,6 @@
 package com.example.volumemonitor.ui
 
+import android.content.Context
 import android.media.AudioManager
 import android.os.Bundle
 import android.os.Handler
@@ -45,7 +46,7 @@ class MainFragment : Fragment() {
     private lateinit var bassSeekBar: SeekBar
     private lateinit var bassValueTextView: TextView
 
-    private val audioManager: AudioManager by lazy { requireActivity().getSystemService(AudioManager::class.java) }
+    private val audioManager: AudioManager by lazy { requireActivity().getSystemService(Context.AUDIO_SERVICE) as AudioManager }
     private val settingsRepository: SettingsRepository by lazy { SettingsRepositoryImpl(requireContext()) }
     private val commandSerializer = JsonCommandSerializer()
 
