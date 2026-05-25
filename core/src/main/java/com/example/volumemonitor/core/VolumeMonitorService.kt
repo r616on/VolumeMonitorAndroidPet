@@ -155,6 +155,9 @@ class VolumeMonitorService : Service() {
         buttonCurrentVolume = settingsRepository.getButtonCurrentVolume()
         Log.d(TAG, "Восстановлена громкость кнопок: $buttonCurrentVolume")
 
+        // Регистрируем VolumeObserver ДО запуска collect, чтобы избежать гонки
+        volumeObserver.register()
+
         // Реактивное связывание через StateFlow
         serviceScope.launch {
             volumeObserver.volume.collect { data ->
@@ -217,7 +220,6 @@ class VolumeMonitorService : Service() {
             registerReceiver(usbReceiver, usbFilter)
         }
 
-        volumeObserver.register()
         startForeground(Constants.NOTIFICATION_ID, notificationController.build())
         autoConnectSavedDevice()
     }
