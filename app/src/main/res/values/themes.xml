@@ -13,4 +13,12 @@
         <item name="colorOnSurface">@color/md_theme_light_onSurface</item>
         <item name="android:colorBackground">@color/md_theme_light_surface</item>
     </style>
+
+    <!-- Тема-оверлей для DialogFragment обучения кнопок -->
+    <style name="ThemeOverlay.VolumeMonitor.Dialog" parent="ThemeOverlay.MaterialComponents.Dialog">
+        <item name="colorPrimary">@color/md_theme_light_primary</item>
+        <item name="colorOnPrimary">@color/md_theme_light_onPrimary</item>
+        <item name="colorOnSurface">@color/md_theme_light_onSurface</item>
+        <item name="android:colorBackground">@android:color/transparent</item>
+    </style>
 </resources>

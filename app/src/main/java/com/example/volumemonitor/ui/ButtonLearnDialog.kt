@@ -1,11 +1,14 @@
 package com.example.volumemonitor.ui
 
 import android.app.Dialog
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
 import android.widget.Button
 import android.widget.ProgressBar
 import android.widget.TextView
@@ -58,12 +61,24 @@ class ButtonLearnDialog : DialogFragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setStyle(STYLE_NO_TITLE, R.style.Theme_VolumeMonitor)
+        // Используем тему-оверлей для диалога, а не тему Activity
+        setStyle(STYLE_NO_TITLE, R.style.ThemeOverlay_VolumeMonitor_Dialog)
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val dialog = super.onCreateDialog(savedInstanceState)
         dialog.setCanceledOnTouchOutside(false)
+
+        // Настраиваем окно диалога: прозрачный фон + затемнение фона Activity
+        dialog.window?.let { win ->
+            win.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+            win.setDimAmount(0.5f)
+            // Убеждаемся, что окно НЕ полноэкранное
+            win.clearFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE)
+            win.clearFlags(WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM)
+        }
+        Log.d(TAG, "onCreateDialog: окно настроено (прозрачный фон + затемнение)")
+
         return dialog
     }
 

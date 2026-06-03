@@ -1,6 +1,7 @@
 package com.example.volumemonitor.core.button
 
 import android.accessibilityservice.AccessibilityService
+import android.accessibilityservice.AccessibilityServiceInfo
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
@@ -60,6 +61,31 @@ class ButtonPressService : AccessibilityService() {
     override fun onServiceConnected() {
         super.onServiceConnected()
         Log.i(TAG, "=== AccessibilityService подключен === isRunning=$isRunning, готов принимать KeyEvent")
+
+        // ═══════════════════════════════════════════════════════════════
+        // [КРИТИЧНО] Программная установка FLAG_REQUEST_FILTER_KEY_EVENTS
+        //
+        // На Android 12+ (API 31+) система ИГНОРИРУЕТ XML-декларацию
+        // флага в accessibility_service_config.xml. Флаг ОБЯЗАТЕЛЬНО
+        // нужно установить программно, иначе onKeyEvent() никогда
+        // не будет вызываться.
+        //
+        // Документация:
+        // "If your service targets Android 12 (API level 31) or higher,
+        //  you must also set this flag in your service's onServiceConnected()
+        //  method. Otherwise, the system ignores the XML declaration."
+        // ═══════════════════════════════════════════════════════════════
+        serviceInfo?.let { info ->
+            val updatedFlags = info.flags or AccessibilityServiceInfo.FLAG_REQUEST_FILTER_KEY_EVENTS
+            if (info.flags != updatedFlags) {
+                info.flags = updatedFlags
+                serviceInfo = info
+                Log.i(TAG, "FLAG_REQUEST_FILTER_KEY_EVENTS установлен программно (flags=0x${info.flags.toString(16)})")
+            } else {
+                Log.d(TAG, "FLAG_REQUEST_FILTER_KEY_EVENTS уже был установлен (flags=0x${info.flags.toString(16)})")
+            }
+        }
+
         isRunning = true
         reloadSettings()
 
