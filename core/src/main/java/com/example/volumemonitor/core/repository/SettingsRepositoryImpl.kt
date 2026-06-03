@@ -3,6 +3,7 @@ package com.example.volumemonitor.core.repository
 import android.content.Context
 import com.example.volumemonitor.core.Constants
 import com.example.volumemonitor.core.model.ButtonAction
+import com.example.volumemonitor.core.model.MaxVolumeSource
 import com.example.volumemonitor.core.model.VolumeControlMode
 
 class SettingsRepositoryImpl(context: Context) : SettingsRepository {
@@ -42,6 +43,28 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
 
     override fun saveVolumeControlMode(mode: VolumeControlMode) {
         generalPrefs.edit().putString(Constants.KEY_VOLUME_CONTROL_MODE, mode.name).apply()
+    }
+
+    // ── Макс. громкость для OBSERVER ──
+
+    override fun getObserverMaxVolumeSource(): MaxVolumeSource {
+        val name = generalPrefs.getString(Constants.KEY_OBSERVER_MAX_VOLUME_SOURCE, MaxVolumeSource.SYSTEM.name)
+        return try {
+            MaxVolumeSource.valueOf(name ?: MaxVolumeSource.SYSTEM.name)
+        } catch (_: Exception) {
+            MaxVolumeSource.SYSTEM
+        }
+    }
+
+    override fun saveObserverMaxVolumeSource(source: MaxVolumeSource) {
+        generalPrefs.edit().putString(Constants.KEY_OBSERVER_MAX_VOLUME_SOURCE, source.name).apply()
+    }
+
+    override fun getObserverCustomMaxVolume(): Int =
+        generalPrefs.getInt(Constants.KEY_OBSERVER_CUSTOM_MAX_VOLUME, 0)
+
+    override fun saveObserverCustomMaxVolume(value: Int) {
+        generalPrefs.edit().putInt(Constants.KEY_OBSERVER_CUSTOM_MAX_VOLUME, value).apply()
     }
 
     // ── Кнопки ──

@@ -23,6 +23,7 @@ import com.example.volumemonitor.core.event.AppEvent
 import com.example.volumemonitor.core.event.AppEventBus
 import com.example.volumemonitor.core.model.ButtonAction
 import com.example.volumemonitor.core.model.DeviceCommand
+import com.example.volumemonitor.core.model.MaxVolumeSource
 import com.example.volumemonitor.core.model.VolumeControlMode
 import com.example.volumemonitor.core.repository.SettingsRepository
 import com.example.volumemonitor.core.repository.SettingsRepositoryImpl
@@ -182,6 +183,9 @@ class MainFragment : Fragment() {
                             localMaxButtonVolume = settingsRepository.getMaxVolumeValue()
                         }
                     }
+                    AppEvent.ObserverSettingsChanged -> {
+                        updateVolumeDisplay()
+                    }
                 }
             }
         }
@@ -218,8 +222,16 @@ class MainFragment : Fragment() {
             volumeTextView.text = "Громкость: $localButtonVolume / $localMaxButtonVolume (кнопки)"
         } else {
             val currentVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
-            val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
-            volumeTextView.text = "Громкость: $currentVolume / $maxVolume"
+            val systemMax = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+            val source = settingsRepository.getObserverMaxVolumeSource()
+            if (source == MaxVolumeSource.CUSTOM) {
+                val customMax = settingsRepository.getObserverCustomMaxVolume()
+                val displayMax = if (customMax > 0) customMax else systemMax
+                val displayCurrent = currentVolume.coerceAtMost(displayMax)
+                volumeTextView.text = "Громкость: $displayCurrent / $displayMax (пользовательская)"
+            } else {
+                volumeTextView.text = "Громкость: $currentVolume / $systemMax (системная)"
+            }
         }
     }
 

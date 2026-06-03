@@ -12,6 +12,8 @@ object Constants {
     // ── Общие настройки ──
     const val PREFS_NAME_GENERAL = "GeneralPrefs"
     const val KEY_VOLUME_CONTROL_MODE = "volume_control_mode"
+    const val KEY_OBSERVER_MAX_VOLUME_SOURCE = "observer_max_volume_source"
+    const val KEY_OBSERVER_CUSTOM_MAX_VOLUME = "observer_custom_max_volume"
 
     // ── Настройки кнопок ──
     const val PREFS_NAME_BUTTONS = "ButtonPrefs"

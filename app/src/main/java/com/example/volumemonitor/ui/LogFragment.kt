@@ -83,9 +83,31 @@ class LogFragment : Fragment() {
                     is AppEvent.ButtonPressed -> {}
                     is AppEvent.VolumeControlModeChanged -> {}
                     AppEvent.ButtonSettingsChanged -> {}
+                    AppEvent.ObserverSettingsChanged -> {
+                        addEvent("Настройки максимальной громкости OBSERVER изменены")
+                    }
                 }
             }
         }
+    }
+
+    /**
+     * Добавить информационную строку (без направления SENT/RECEIVED) в лог.
+     * Используется для внутренних событий, таких как изменение настроек.
+     */
+    private fun addEvent(message: String) {
+        val timeStr = timeFormat.get().format(Date())
+        val line = "[$timeStr] ● $message"
+
+        synchronized(lines) {
+            lines.add(0, line)
+            while (lines.size > maxLines) {
+                lines.removeAt(lines.size - 1)
+            }
+        }
+
+        mainHandler.removeCallbacks(updateRunnable)
+        mainHandler.postDelayed(updateRunnable, 80)
     }
 
     private fun appendLine(direction: LogDirection, data: String) {

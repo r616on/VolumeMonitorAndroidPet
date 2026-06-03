@@ -17,6 +17,7 @@ import com.example.volumemonitor.core.event.AppEventBus
 import com.example.volumemonitor.core.event.AppEvent
 import com.example.volumemonitor.core.model.ButtonAction
 import com.example.volumemonitor.core.model.DeviceCommand
+import com.example.volumemonitor.core.model.MaxVolumeSource
 import com.example.volumemonitor.core.model.VolumeControlMode
 import com.example.volumemonitor.core.notification.NotificationController
 import com.example.volumemonitor.core.repository.SettingsRepository
@@ -143,9 +144,15 @@ class VolumeMonitorService : Service() {
         Log.d(TAG, "=== Создание сервиса ===")
 
         portManager = UsbSerialPortManager(this, usbManager)
-        volumeObserver = VolumeObserver(this, audioManager)
         notificationController = NotificationController(this)
         settingsRepository = SettingsRepositoryImpl(this)
+
+        // Переопределение максимальной громкости для OBSERVER (если задано пользователем)
+        val observerMaxOverride = if (settingsRepository.getObserverMaxVolumeSource() == MaxVolumeSource.CUSTOM) {
+            val customMax = settingsRepository.getObserverCustomMaxVolume()
+            if (customMax > 0) customMax else audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+        } else null
+        volumeObserver = VolumeObserver(this, audioManager, observerMaxOverride)
 
         // Инициализируем кеш режима управления
         cachedControlMode = settingsRepository.getVolumeControlMode()
@@ -203,6 +210,16 @@ class VolumeMonitorService : Service() {
                         if (event.mode == VolumeControlMode.BUTTONS) {
                             syncButtonVolumeToPort()
                         }
+                    }
+                    is AppEvent.ObserverSettingsChanged -> {
+                        val override = if (settingsRepository.getObserverMaxVolumeSource() == MaxVolumeSource.CUSTOM) {
+                            val customMax = settingsRepository.getObserverCustomMaxVolume()
+                            if (customMax > 0) customMax else audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+                        } else null
+                        // setMaxVolumeOverride обновляет _volume.value, что автоматически триггерит flow-коллектор
+                        // и вызывает sendVolumeData — дублировать явную отправку не нужно
+                        volumeObserver.setMaxVolumeOverride(override)
+                        Log.d(TAG, "ObserverSettingsChanged: override=$override")
                     }
                     else -> { /* другие события не обрабатываем */ }
                 }

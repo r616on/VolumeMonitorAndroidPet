@@ -42,4 +42,7 @@ sealed class AppEvent {
 
     /** Настройки кнопок изменены — сервису нужно перезагрузить keyCode */
     object ButtonSettingsChanged : AppEvent()
+
+    /** Настройки максимальной громкости OBSERVER изменены */
+    object ObserverSettingsChanged : AppEvent()
 }
