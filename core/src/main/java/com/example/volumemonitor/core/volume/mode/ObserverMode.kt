@@ -57,10 +57,11 @@ class ObserverMode(
             volumeObserver.volume.collect { data ->
                 AppEventBus.tryEmit(AppEvent.VolumeChanged(data.current, data.target))
                 commandSender.sendVolume(data.target)
+                val isCustom = settingsRepository.getObserverMaxVolumeSource() == MaxVolumeSource.CUSTOM
                 val modeState = ModeState(
-                    currentVolume = data.current,
+                    currentVolume = data.current.coerceAtMost(data.max),
                     maxVolume = data.max,
-                    displayLabel = "системная"
+                    displayLabel = if (isCustom) "пользовательская" else "системная"
                 )
                 _state.value = modeState
                 AppEventBus.tryEmit(
