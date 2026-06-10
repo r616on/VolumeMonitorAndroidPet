@@ -6,6 +6,7 @@ import android.view.ViewGroup
 import com.example.volumemonitor.core.event.AppEvent
 import com.example.volumemonitor.core.model.VolumeControlMode
 import com.example.volumemonitor.core.repository.SettingsRepository
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -42,12 +43,13 @@ abstract class VolumeMode(
     protected val appEvents: SharedFlow<AppEvent>,
     val modeId: VolumeControlMode,
     val displayName: String,
-    val description: String
+    val description: String,
+    private val dispatcher: CoroutineDispatcher = Dispatchers.Default
 ) {
     protected val _state = MutableStateFlow(ModeState(0, 0, ""))
     val state: StateFlow<ModeState> = _state.asStateFlow()
 
-    protected val modeScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+    protected val modeScope = CoroutineScope(dispatcher + SupervisorJob())
 
     /** Запустить режим — начать слежение за громкостью. */
     abstract fun start()
