@@ -7,11 +7,11 @@ import com.example.volumemonitor.core.event.AppEventBus
 import com.example.volumemonitor.core.model.ButtonAction
 import com.example.volumemonitor.core.model.VolumeControlMode
 import com.example.volumemonitor.core.repository.SettingsRepository
+import com.example.volumemonitor.core.volume.VolumeMath
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
-import kotlin.math.roundToInt
 
 /**
  * Режим управления громкостью через назначенные физические кнопки.
@@ -86,7 +86,7 @@ class ButtonsMode(
 
     /** Конвертирует громкость кнопок (0..maxVolume) в значение порта (0..255). */
     private fun buttonVolumeToPort(volume: Int, maxVolume: Int): Int =
-        (volume * 255.0 / maxVolume).roundToInt().coerceIn(0, 255)
+        VolumeMath.buttonToPort(volume, maxVolume)
 
     /** Отправить текущий buttonCurrentVolume на устройство. */
     private fun syncButtonVolumeToPort() {

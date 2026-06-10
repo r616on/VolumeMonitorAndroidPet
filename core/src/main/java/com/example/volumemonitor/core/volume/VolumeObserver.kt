@@ -11,11 +11,9 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
 import android.util.Log
-import com.example.volumemonitor.core.Constants
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlin.math.roundToInt
 
 // ── Иммутабельное состояние громкости ──
 
@@ -49,10 +47,7 @@ class VolumeObserver(
         get() {
             val current = currentVolume
             val max = (maxVolumeOverride ?: maxVolume).coerceAtLeast(1)
-            val target = if (current == 0) 0
-            else (current * Constants.MAX_VOLUME_TARGET.toDouble() / max)
-                .roundToInt()
-                .coerceIn(0, Constants.MAX_VOLUME_TARGET)
+            val target = VolumeMath.observerToTarget(current, max)
             return VolumeData(current, max, target)
         }
 
