@@ -82,6 +82,13 @@ class MainFragment : Fragment() {
         bassValueTextView.text = "${bassPositionToPercent(level)}%"
     }
 
+    private fun screenPositionToPercent(position: Int): Int =
+        (position * 100f / Constants.SCREEN_MAX_POSITION.toFloat()).roundToInt()
+
+    private fun updateScreenText(position: Int) {
+        screenVolumeValueTextView.text = "${screenPositionToPercent(position)}%"
+    }
+
     private fun sendBassCommand(level: Int) {
         val value = bassPositionToValue(level)
         val json = commandSerializer.serialize(DeviceCommand.SetBassLevel(value))
@@ -155,7 +162,7 @@ class MainFragment : Fragment() {
 
         screenVolumeSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                screenVolumeValueTextView.text = "$progress"
+                updateScreenText(progress)
             }
             override fun onStartTrackingTouch(seekBar: SeekBar?) {}
             override fun onStopTrackingTouch(seekBar: SeekBar) {
@@ -166,14 +173,14 @@ class MainFragment : Fragment() {
         screenVolumeMinusButton.setOnClickListener {
             val newVal = (screenVolumeSeekBar.progress - 1).coerceAtLeast(0)
             screenVolumeSeekBar.progress = newVal
-            screenVolumeValueTextView.text = "$newVal"
+            updateScreenText(newVal)
             AppEventBus.tryEmit(AppEvent.ScreenVolumeChanged(newVal))
         }
 
         screenVolumePlusButton.setOnClickListener {
             val newVal = (screenVolumeSeekBar.progress + 1).coerceAtMost(Constants.SCREEN_MAX_POSITION)
             screenVolumeSeekBar.progress = newVal
-            screenVolumeValueTextView.text = "$newVal"
+            updateScreenText(newVal)
             AppEventBus.tryEmit(AppEvent.ScreenVolumeChanged(newVal))
         }
 
@@ -198,7 +205,7 @@ class MainFragment : Fragment() {
                         if (isScreenMode) {
                             if (screenVolumeSeekBar.progress != event.currentVolume) {
                                 screenVolumeSeekBar.progress = event.currentVolume
-                                screenVolumeValueTextView.text = "${event.currentVolume}"
+                                updateScreenText(event.currentVolume)
                             }
                         }
                     }
