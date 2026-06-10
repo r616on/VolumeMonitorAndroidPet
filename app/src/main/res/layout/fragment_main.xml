@@ -33,11 +33,16 @@
         android:orientation="horizontal"
         android:visibility="gone">
 
-        <TextView
-            android:layout_width="54dp"
+        <LinearLayout
+            android:layout_width="130dp"
             android:layout_height="wrap_content"
             android:layout_marginEnd="10dp"
-            android:text="Громкость:"
+            android:orientation="horizontal">
+        <TextView
+            android:layout_width="60dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="10dp"
+            android:text="Volume:"
             android:textColor="?android:attr/textColorPrimary"
             android:textSize="16sp" />
 
@@ -45,15 +50,15 @@
             android:id="@+id/screenVolumeValueTextView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="10dp"
             android:text="0"
             android:textColor="?android:attr/textColorPrimary"
             android:textSize="22sp" />
+        </LinearLayout>
 
         <Button
             android:id="@+id/screenVolumeMinusButton"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
             android:gravity="center"
             android:text="-"
             android:textSize="18sp"
@@ -71,8 +76,8 @@
 
         <Button
             android:id="@+id/screenVolumePlusButton"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
             android:gravity="center"
             android:text="+"
             android:textSize="18sp"
@@ -87,9 +92,14 @@
         android:layout_marginBottom="20dp"
         android:gravity="center_vertical"
         android:orientation="horizontal">
+        <LinearLayout
+            android:layout_width="130dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="10dp"
+            android:orientation="horizontal">
 
         <TextView
-            android:layout_width="54dp"
+            android:layout_width="60dp"
             android:layout_height="wrap_content"
             android:layout_marginEnd="10dp"
             android:text="Bass:"
@@ -100,15 +110,14 @@
             android:id="@+id/bassValueTextView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="10dp"
             android:text="0"
-            android:textColor="#000000"
+            android:textColor="?android:attr/textColorPrimary"
             android:textSize="22sp" />
-
+        </LinearLayout>
         <Button
             android:id="@+id/bassMinusButton"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
             android:gravity="center"
             android:text="-"
             android:textSize="18sp"
@@ -126,8 +135,8 @@
 
         <Button
             android:id="@+id/bassPlusButton"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
             android:gravity="center"
             android:text="+"
             android:textSize="18sp"
@@ -143,8 +152,13 @@
         android:layout_marginBottom="20dp"
         android:gravity="center_vertical"
         android:orientation="horizontal">
+        <LinearLayout
+            android:layout_width="130dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="10dp"
+            android:orientation="horizontal">
         <TextView
-            android:layout_width="54dp"
+            android:layout_width="60dp"
             android:layout_height="wrap_content"
             android:layout_marginEnd="10dp"
             android:text="Пресет:"
@@ -155,11 +169,10 @@
             android:id="@+id/presetTextView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="10dp"
             android:text="0"
-            android:textColor="#000000"
-            android:textSize="22sp" />
-
+            android:textColor="?android:attr/textColorPrimary"
+            android:textSize="22sp"  />
+        </LinearLayout>
 
         <Button
             android:id="@+id/changePresetButton"
