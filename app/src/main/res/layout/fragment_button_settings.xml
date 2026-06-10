@@ -81,25 +81,6 @@
             android:layout_marginBottom="16dp"
             android:background="#DDDDDD" />
 
-        <!-- ── Максимальное значение громкости ── -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="4dp"
-            android:text="Максимальное значение громкости"
-            android:textColor="#000000"
-            android:textSize="14sp" />
-
-        <EditText
-            android:id="@+id/maxVolumeEditText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            android:inputType="number"
-            android:hint="15"
-            android:textColor="#000000"
-            android:textSize="16sp" />
-
         <!-- ── Задержка долгого нажатия ── -->
         <TextView
             android:layout_width="wrap_content"

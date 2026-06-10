@@ -16,7 +16,7 @@ import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
 import com.example.volumemonitor.core.VolumeMonitorService
 import com.example.volumemonitor.ui.ButtonSettingsFragment
-import com.example.volumemonitor.ui.GeneralSettingsFragment
+import com.example.volumemonitor.ui.ModesFragment
 import com.example.volumemonitor.ui.LogFragment
 import com.example.volumemonitor.ui.MainFragment
 import com.example.volumemonitor.ui.UsbSettingsFragment
@@ -83,7 +83,7 @@ class MainActivity : AppCompatActivity() {
         viewPager.offscreenPageLimit = 4  // держим все 5 фрагментов в памяти
 
         // Настройка табов вручную (без TabLayoutMediator — отключаем анимацию переключения)
-        val tabTexts = arrayOf("Главная", "Лог", "Общие", "Кнопки", "USB")
+        val tabTexts = arrayOf("Главная", "Лог", "Режимы", "Кнопки", "USB")
         for (text in tabTexts) {
             tabLayout.addTab(tabLayout.newTab().setText(text))
         }
@@ -146,7 +146,7 @@ class MainActivity : AppCompatActivity() {
         override fun createFragment(position: Int): Fragment = when (position) {
             0 -> MainFragment()
             1 -> LogFragment()
-            2 -> GeneralSettingsFragment()
+            2 -> ModesFragment()
             3 -> ButtonSettingsFragment()
             4 -> UsbSettingsFragment()
             else -> throw IllegalArgumentException("Invalid position: $position")

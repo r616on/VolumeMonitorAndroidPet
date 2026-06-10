@@ -1,6 +1,7 @@
 package com.example.volumemonitor.core.repository
 
 import com.example.volumemonitor.core.model.ButtonAction
+import com.example.volumemonitor.core.model.MaxVolumeSource
 import com.example.volumemonitor.core.model.VolumeControlMode
 
 interface SettingsRepository {
@@ -12,6 +13,12 @@ interface SettingsRepository {
     // ── Режим управления ──
     fun getVolumeControlMode(): VolumeControlMode
     fun saveVolumeControlMode(mode: VolumeControlMode)
+
+    // ── Макс. громкость для OBSERVER ──
+    fun getObserverMaxVolumeSource(): MaxVolumeSource
+    fun saveObserverMaxVolumeSource(source: MaxVolumeSource)
+    fun getObserverCustomMaxVolume(): Int
+    fun saveObserverCustomMaxVolume(value: Int)
 
     // ── Кнопки ──
     fun getButtonKeyCodes(action: ButtonAction): Set<Int>

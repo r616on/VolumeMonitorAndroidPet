@@ -39,7 +39,6 @@ class ButtonSettingsFragment : Fragment() {
     private lateinit var learnVolUpButton: Button
     private lateinit var volDownKeyCodesContainer: LinearLayout
     private lateinit var learnVolDownButton: Button
-    private lateinit var maxVolumeEditText: EditText
     private lateinit var longPressDelayEditText: EditText
     private lateinit var resetAllButton: Button
 
@@ -60,13 +59,11 @@ class ButtonSettingsFragment : Fragment() {
         learnVolUpButton = view.findViewById(R.id.learnVolUpButton)
         volDownKeyCodesContainer = view.findViewById(R.id.volDownKeyCodesContainer)
         learnVolDownButton = view.findViewById(R.id.learnVolDownButton)
-        maxVolumeEditText = view.findViewById(R.id.maxVolumeEditText)
         longPressDelayEditText = view.findViewById(R.id.longPressDelayEditText)
         resetAllButton = view.findViewById(R.id.resetAllButton)
 
         // Восстанавливаем значения
         refreshButtonStatuses()
-        maxVolumeEditText.setText(settingsRepository.getMaxVolumeValue().toString())
         longPressDelayEditText.setText(settingsRepository.getLongPressDelayMs().toString())
 
         // ── Обучение кнопок ──
@@ -81,9 +78,6 @@ class ButtonSettingsFragment : Fragment() {
 
         // ── Сохранение при потере фокуса ──
 
-        maxVolumeEditText.setOnFocusChangeListener { _, hasFocus ->
-            if (!hasFocus) saveMaxVolume()
-        }
         longPressDelayEditText.setOnFocusChangeListener { _, hasFocus ->
             if (!hasFocus) saveLongPressDelay()
         }
@@ -106,7 +100,7 @@ class ButtonSettingsFragment : Fragment() {
     private fun showLearnDialog(action: ButtonAction) {
         if (!ButtonPressService.isRunning) {
             Log.w(TAG, "AccessibilityService не запущен, показываем диалог с предложением включить")
-            AlertDialog.Builder(requireContext())
+            AlertDialog.Builder(requireContext(), R.style.ThemeOverlay_VolumeMonitor_Dialog)
                 .setTitle("Служба специальных возможностей не включена")
                 .setMessage(
                     "Для обучения и работы кнопок необходимо включить службу " +
@@ -117,7 +111,7 @@ class ButtonSettingsFragment : Fragment() {
                     val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
                     startActivity(intent)
                 }
-                .setNegativeButton("Отмена", null)
+                .setNegativeButton("Отмена") { dialog, _ -> dialog.dismiss() }
                 .show()
             return
         }
@@ -228,17 +222,6 @@ class ButtonSettingsFragment : Fragment() {
             KeyEvent.keyCodeToString(keyCode)
         } catch (_: Exception) {
             "UNKNOWN"
-        }
-    }
-
-    private fun saveMaxVolume() {
-        val text = maxVolumeEditText.text.toString()
-        val value = text.toIntOrNull()
-        if (value != null && value > 0) {
-            settingsRepository.saveMaxVolumeValue(value)
-            Log.d(TAG, "Макс. громкость сохранена: $value")
-        } else {
-            maxVolumeEditText.setText(settingsRepository.getMaxVolumeValue().toString())
         }
     }
 

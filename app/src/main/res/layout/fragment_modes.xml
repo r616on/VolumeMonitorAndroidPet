@@ -18,7 +18,7 @@
         android:orientation="horizontal">
 
         <TextView
-            android:id="@+id/generalTitleTextView"
+            android:id="@+id/modesTitleTextView"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
@@ -63,7 +63,7 @@
             android:textColor="#000000"
             android:textSize="16sp" />
 
-        <!-- ── Настройки максимальной громкости (только для OBSERVER) ── -->
+        <!-- Настройки максимальной громкости (только для OBSERVER) -->
         <LinearLayout
             android:id="@+id/observerMaxSettingsLayout"
             android:layout_width="match_parent"
@@ -103,7 +103,7 @@
             android:textColor="#000000"
             android:textSize="16sp" />
 
-        <!-- ── Настройки максимальной громкости (только для BUTTONS) ── -->
+        <!-- Настройки максимальной громкости (только для BUTTONS) -->
         <LinearLayout
             android:id="@+id/buttonMaxVolumeSettingsLayout"
             android:layout_width="match_parent"

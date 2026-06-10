@@ -27,7 +27,8 @@ data class VolumeData(
 
 class VolumeObserver(
     private val context: Context,
-    private val audioManager: AudioManager
+    private val audioManager: AudioManager,
+    private var maxVolumeOverride: Int? = null
 ) {
     private val TAG = "VolumeObserver"
 
@@ -38,10 +39,16 @@ class VolumeObserver(
     val currentVolume: Int get() = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
     val maxVolume: Int get() = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
 
+    /** Установить переопределённое максимальное значение. null = использовать системное. */
+    fun setMaxVolumeOverride(override: Int?) {
+        maxVolumeOverride = override
+        _volume.value = currentVolumeData
+    }
+
     internal val currentVolumeData: VolumeData
         get() {
             val current = currentVolume
-            val max = maxVolume
+            val max = (maxVolumeOverride ?: maxVolume).coerceAtLeast(1)
             val target = if (current == 0) 0
             else (current * Constants.MAX_VOLUME_TARGET.toDouble() / max)
                 .roundToInt()
