@@ -50,6 +50,17 @@
             android:textColor="?android:attr/textColorPrimary"
             android:textSize="22sp" />
 
+        <Button
+            android:id="@+id/screenVolumeMinusButton"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:gravity="center"
+            android:text="-"
+            android:textSize="18sp"
+            android:textColor="#FFFFFF"
+            android:backgroundTint="#2196F3"
+            android:layout_marginEnd="4dp" />
+
         <SeekBar
             android:id="@+id/screenVolumeSeekBar"
             android:layout_width="0dp"
@@ -57,6 +68,17 @@
             android:layout_weight="1"
             android:max="14"
             android:progress="0" />
+
+        <Button
+            android:id="@+id/screenVolumePlusButton"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:gravity="center"
+            android:text="+"
+            android:textSize="18sp"
+            android:textColor="#FFFFFF"
+            android:backgroundTint="#2196F3"
+            android:layout_marginStart="4dp" />
     </LinearLayout>
 
     <LinearLayout
@@ -83,13 +105,35 @@
             android:textColor="#000000"
             android:textSize="22sp" />
 
+        <Button
+            android:id="@+id/bassMinusButton"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:gravity="center"
+            android:text="-"
+            android:textSize="18sp"
+            android:textColor="#FFFFFF"
+            android:backgroundTint="#4CAF50"
+            android:layout_marginEnd="4dp" />
+
         <SeekBar
             android:id="@+id/bassSeekBar"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:max="8"
-            android:progress="4" />
+            android:max="14"
+            android:progress="7" />
+
+        <Button
+            android:id="@+id/bassPlusButton"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:gravity="center"
+            android:text="+"
+            android:textSize="18sp"
+            android:textColor="#FFFFFF"
+            android:backgroundTint="#4CAF50"
+            android:layout_marginStart="4dp" />
 
     </LinearLayout>
 
@@ -99,6 +143,23 @@
         android:layout_marginBottom="20dp"
         android:gravity="center_vertical"
         android:orientation="horizontal">
+        <TextView
+            android:layout_width="54dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="10dp"
+            android:text="Пресет:"
+            android:textColor="#000000"
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/presetTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="10dp"
+            android:text="0"
+            android:textColor="#000000"
+            android:textSize="22sp" />
+
 
         <Button
             android:id="@+id/changePresetButton"
@@ -114,29 +175,7 @@
             android:layout_marginEnd="10dp"
             android:text="Запросить пресет" />
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="58dp"
-            android:gravity="center_horizontal"
-            android:layout_marginStart="10dp"
-            android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/presetLabelTextView"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Пресет"
-                android:textColor="#4CAF50"
-                android:textSize="16sp" />
-
-            <TextView
-                android:id="@+id/presetTextView"
-                android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                android:text="1"
-                android:textColor="#000000"
-                android:textSize="22sp" />
-        </LinearLayout>
     </LinearLayout>
 
 </LinearLayout>

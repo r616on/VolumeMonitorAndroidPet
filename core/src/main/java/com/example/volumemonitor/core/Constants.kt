@@ -30,8 +30,8 @@ object Constants {
     const val BAUD_RATE = 115200
     const val DATA_BITS = 8
     const val MAX_VOLUME_TARGET = 255
-    const val BASS_MAX_POSITION = 8
-    const val BASS_DEFAULT_POSITION = 4
+    const val BASS_MAX_POSITION = 14          // 15 положений (0..14), как у громкости
+    const val BASS_DEFAULT_POSITION = 7       // середина 0..14
 
     // ── Управление с экрана ──
     const val SCREEN_MAX_POSITION = 14          // 15 положений (0..14)

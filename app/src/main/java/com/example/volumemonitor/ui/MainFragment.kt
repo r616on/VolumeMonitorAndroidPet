@@ -46,10 +46,14 @@ class MainFragment : Fragment() {
     private lateinit var usbStatusTextView: TextView
     private lateinit var bassSeekBar: SeekBar
     private lateinit var bassValueTextView: TextView
+    private lateinit var bassMinusButton: Button
+    private lateinit var bassPlusButton: Button
 
     private lateinit var screenVolumeLayout: View
     private lateinit var screenVolumeSeekBar: SeekBar
     private lateinit var screenVolumeValueTextView: TextView
+    private lateinit var screenVolumeMinusButton: Button
+    private lateinit var screenVolumePlusButton: Button
 
     private val audioManager: AudioManager by lazy { requireActivity().getSystemService(Context.AUDIO_SERVICE) as AudioManager }
     private val settingsRepository: SettingsRepository by lazy { SettingsRepositoryImpl(requireContext()) }
@@ -67,7 +71,7 @@ class MainFragment : Fragment() {
     private fun saveBassLevel(level: Int) = settingsRepository.saveBassLevel(level)
 
     private fun bassPositionToPercent(position: Int): Int =
-        (position * 100f / 8f).roundToInt()
+        (position * 100f / Constants.BASS_MAX_POSITION.toFloat()).roundToInt()
 
     private fun bassPositionToValue(position: Int): Int {
         val percent = bassPositionToPercent(position)
@@ -103,6 +107,10 @@ class MainFragment : Fragment() {
         screenVolumeLayout = view.findViewById(R.id.screenVolumeLayout)
         screenVolumeSeekBar = view.findViewById(R.id.screenVolumeSeekBar)
         screenVolumeValueTextView = view.findViewById(R.id.screenVolumeValueTextView)
+        screenVolumeMinusButton = view.findViewById(R.id.screenVolumeMinusButton)
+        screenVolumePlusButton = view.findViewById(R.id.screenVolumePlusButton)
+        bassMinusButton = view.findViewById(R.id.bassMinusButton)
+        bassPlusButton = view.findViewById(R.id.bassPlusButton)
         changePresetButton = view.findViewById(R.id.changePresetButton)
         requestPresetButton = view.findViewById(R.id.requestPresetButton)
 
@@ -122,10 +130,28 @@ class MainFragment : Fragment() {
             }
             override fun onStartTrackingTouch(seekBar: SeekBar?) {}
             override fun onStopTrackingTouch(seekBar: SeekBar?) {
-                val level = seekBar?.progress ?: 4
+                val level = seekBar?.progress ?: 7
                 saveBassLevel(level)
             }
         })
+
+        bassMinusButton.setOnClickListener {
+            val newVal = (bassSeekBar.progress - 1).coerceAtLeast(0)
+            bassSeekBar.progress = newVal
+            updateBassText(newVal)
+            sendBassCommand(newVal)
+            lastSentBassLevel = newVal
+            saveBassLevel(newVal)
+        }
+
+        bassPlusButton.setOnClickListener {
+            val newVal = (bassSeekBar.progress + 1).coerceAtMost(Constants.BASS_MAX_POSITION)
+            bassSeekBar.progress = newVal
+            updateBassText(newVal)
+            sendBassCommand(newVal)
+            lastSentBassLevel = newVal
+            saveBassLevel(newVal)
+        }
 
         screenVolumeSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
@@ -136,6 +162,20 @@ class MainFragment : Fragment() {
                 AppEventBus.tryEmit(AppEvent.ScreenVolumeChanged(seekBar.progress))
             }
         })
+
+        screenVolumeMinusButton.setOnClickListener {
+            val newVal = (screenVolumeSeekBar.progress - 1).coerceAtLeast(0)
+            screenVolumeSeekBar.progress = newVal
+            screenVolumeValueTextView.text = "$newVal"
+            AppEventBus.tryEmit(AppEvent.ScreenVolumeChanged(newVal))
+        }
+
+        screenVolumePlusButton.setOnClickListener {
+            val newVal = (screenVolumeSeekBar.progress + 1).coerceAtMost(Constants.SCREEN_MAX_POSITION)
+            screenVolumeSeekBar.progress = newVal
+            screenVolumeValueTextView.text = "$newVal"
+            AppEventBus.tryEmit(AppEvent.ScreenVolumeChanged(newVal))
+        }
 
         changePresetButton.setOnClickListener {
             getService()?.sendCommand(commandSerializer.serialize(DeviceCommand.ChangePreset))
