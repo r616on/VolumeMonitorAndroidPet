@@ -25,6 +25,7 @@ import com.example.volumemonitor.core.usb.UsbSerialPortManager
 import com.example.volumemonitor.core.volume.mode.ButtonsMode
 import com.example.volumemonitor.core.volume.mode.CommandSender
 import com.example.volumemonitor.core.volume.mode.ObserverMode
+import com.example.volumemonitor.core.volume.mode.ScreenMode
 import com.example.volumemonitor.core.volume.mode.VolumeMode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -149,6 +150,12 @@ class VolumeMonitorService : Service() {
                 appEvents = AppEventBus.events
             )
             VolumeControlMode.BUTTONS -> ButtonsMode(
+                context = this,
+                commandSender = commandSender,
+                settingsRepository = settingsRepository,
+                appEvents = AppEventBus.events
+            )
+            VolumeControlMode.SCREEN -> ScreenMode(
                 context = this,
                 commandSender = commandSender,
                 settingsRepository = settingsRepository,

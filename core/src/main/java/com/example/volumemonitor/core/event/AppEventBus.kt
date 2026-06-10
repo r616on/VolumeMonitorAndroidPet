@@ -53,4 +53,7 @@ sealed class AppEvent {
         val maxVolume: Int,
         val displayLabel: String
     ) : AppEvent()
+
+    /** Ползунок громкости на экране сдвинут пользователем. value: 0..maxVolume (по умолчанию 0..14). */
+    data class ScreenVolumeChanged(val value: Int) : AppEvent()
 }

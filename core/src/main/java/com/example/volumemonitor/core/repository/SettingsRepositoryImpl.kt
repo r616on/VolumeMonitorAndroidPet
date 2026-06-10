@@ -133,4 +133,13 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
     override fun saveLongPressDelayMs(delayMs: Long) {
         buttonPrefs.edit().putLong(Constants.KEY_LONG_PRESS_DELAY_MS, delayMs).apply()
     }
+
+    // ── Управление с экрана ──
+
+    override fun getScreenCurrentVolume(): Int =
+        generalPrefs.getInt(Constants.KEY_SCREEN_CURRENT_VOLUME, 0)
+
+    override fun saveScreenCurrentVolume(volume: Int) {
+        generalPrefs.edit().putInt(Constants.KEY_SCREEN_CURRENT_VOLUME, volume).apply()
+    }
 }

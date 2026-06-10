@@ -78,6 +78,7 @@ class ModesFragment : Fragment() {
         when (currentMode) {
             VolumeControlMode.OBSERVER -> modeRadioGroup.check(R.id.radioObserver)
             VolumeControlMode.BUTTONS -> modeRadioGroup.check(R.id.radioButtons)
+            VolumeControlMode.SCREEN -> modeRadioGroup.check(R.id.radioScreen)
         }
         updateModeDescription(currentMode)
 
@@ -118,6 +119,7 @@ class ModesFragment : Fragment() {
             val selectedMode = when (checkedId) {
                 R.id.radioObserver -> VolumeControlMode.OBSERVER
                 R.id.radioButtons -> VolumeControlMode.BUTTONS
+                R.id.radioScreen -> VolumeControlMode.SCREEN
                 else -> return@setOnCheckedChangeListener
             }
             Log.d(TAG, "Выбран режим: $selectedMode (текущий: $currentMode)")
@@ -192,6 +194,8 @@ class ModesFragment : Fragment() {
                 "Отслеживание: громкость считывается из системы Android и отправляется на Arduino при каждом изменении."
             VolumeControlMode.BUTTONS ->
                 "Кнопки: громкость изменяется на ±1 при каждом нажатии назначенной кнопки. Удерживайте кнопку для непрерывного изменения."
+            VolumeControlMode.SCREEN ->
+                "Экран: громкость регулируется ползунком на главном экране (15 положений)."
         }
     }
 }

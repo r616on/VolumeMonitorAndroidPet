@@ -19,6 +19,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.example.volumemonitor.R
 import com.example.volumemonitor.core.VolumeMonitorService
+import com.example.volumemonitor.core.Constants
 import com.example.volumemonitor.core.event.AppEvent
 import com.example.volumemonitor.core.event.AppEventBus
 import com.example.volumemonitor.core.model.DeviceCommand
@@ -45,6 +46,10 @@ class MainFragment : Fragment() {
     private lateinit var usbStatusTextView: TextView
     private lateinit var bassSeekBar: SeekBar
     private lateinit var bassValueTextView: TextView
+
+    private lateinit var screenVolumeLayout: View
+    private lateinit var screenVolumeSeekBar: SeekBar
+    private lateinit var screenVolumeValueTextView: TextView
 
     private val audioManager: AudioManager by lazy { requireActivity().getSystemService(Context.AUDIO_SERVICE) as AudioManager }
     private val settingsRepository: SettingsRepository by lazy { SettingsRepositoryImpl(requireContext()) }
@@ -94,6 +99,10 @@ class MainFragment : Fragment() {
         bassSeekBar = view.findViewById(R.id.bassSeekBar)
         bassValueTextView = view.findViewById(R.id.bassValueTextView)
         presetTextView = view.findViewById(R.id.presetTextView)
+
+        screenVolumeLayout = view.findViewById(R.id.screenVolumeLayout)
+        screenVolumeSeekBar = view.findViewById(R.id.screenVolumeSeekBar)
+        screenVolumeValueTextView = view.findViewById(R.id.screenVolumeValueTextView)
         changePresetButton = view.findViewById(R.id.changePresetButton)
         requestPresetButton = view.findViewById(R.id.requestPresetButton)
 
@@ -118,6 +127,16 @@ class MainFragment : Fragment() {
             }
         })
 
+        screenVolumeSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                screenVolumeValueTextView.text = "$progress"
+            }
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar) {
+                AppEventBus.tryEmit(AppEvent.ScreenVolumeChanged(seekBar.progress))
+            }
+        })
+
         changePresetButton.setOnClickListener {
             getService()?.sendCommand(commandSerializer.serialize(DeviceCommand.ChangePreset))
             disablePresetButtonsTemporarily()
@@ -134,6 +153,14 @@ class MainFragment : Fragment() {
                 when (event) {
                     is AppEvent.ModeStateChanged -> {
                         volumeTextView.text = "Громкость: ${event.currentVolume} / ${event.maxVolume} (${event.displayLabel})"
+                        val isScreenMode = event.modeId == VolumeControlMode.SCREEN
+                        screenVolumeLayout.visibility = if (isScreenMode) View.VISIBLE else View.GONE
+                        if (isScreenMode) {
+                            if (screenVolumeSeekBar.progress != event.currentVolume) {
+                                screenVolumeSeekBar.progress = event.currentVolume
+                                screenVolumeValueTextView.text = "${event.currentVolume}"
+                            }
+                        }
                     }
                     is AppEvent.VolumeChanged -> {
                         // Fallback: если ModeStateChanged ещё не пришёл, используем прямое чтение
@@ -208,6 +235,11 @@ class MainFragment : Fragment() {
                 val current = settingsRepository.getButtonCurrentVolume()
                 val max = settingsRepository.getMaxVolumeValue()
                 "Громкость: $current / $max (кнопки)"
+            }
+            VolumeControlMode.SCREEN -> {
+                val current = settingsRepository.getScreenCurrentVolume()
+                val max = Constants.SCREEN_MAX_POSITION
+                "Громкость: $current / $max (экран)"
             }
         }
         volumeTextView.text = text

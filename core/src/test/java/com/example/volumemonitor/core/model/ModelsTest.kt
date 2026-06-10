@@ -64,9 +64,10 @@ class ModelsTest {
     @Test
     fun volumeControlMode_enumValues() {
         val modes = VolumeControlMode.values()
-        assertEquals(2, modes.size)
+        assertEquals(3, modes.size)
         assertTrue(modes.contains(VolumeControlMode.OBSERVER))
         assertTrue(modes.contains(VolumeControlMode.BUTTONS))
+        assertTrue(modes.contains(VolumeControlMode.SCREEN))
     }
 
     @Test

@@ -31,4 +31,8 @@ interface SettingsRepository {
     fun saveButtonCurrentVolume(volume: Int)
     fun getLongPressDelayMs(): Long
     fun saveLongPressDelayMs(delayMs: Long)
+
+    // ── Управление с экрана ──
+    fun getScreenCurrentVolume(): Int
+    fun saveScreenCurrentVolume(volume: Int)
 }

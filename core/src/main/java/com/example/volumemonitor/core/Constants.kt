@@ -33,6 +33,10 @@ object Constants {
     const val BASS_MAX_POSITION = 8
     const val BASS_DEFAULT_POSITION = 4
 
+    // ── Управление с экрана ──
+    const val SCREEN_MAX_POSITION = 14          // 15 положений (0..14)
+    const val KEY_SCREEN_CURRENT_VOLUME = "screen_current_volume"
+
     // ── Значения по умолчанию для кнопок ──
     const val DEFAULT_MAX_VOLUME_VALUE = 15
     const val DEFAULT_LONG_PRESS_DELAY_MS = 500L

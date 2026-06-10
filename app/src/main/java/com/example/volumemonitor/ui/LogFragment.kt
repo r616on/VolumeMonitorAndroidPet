@@ -87,6 +87,7 @@ class LogFragment : Fragment() {
                         addEvent("Настройки максимальной громкости OBSERVER изменены")
                     }
                     is AppEvent.ModeStateChanged -> {}      // не логируется
+                    is AppEvent.ScreenVolumeChanged -> {}  // не логируется
                 }
             }
         }
