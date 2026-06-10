@@ -191,7 +191,7 @@ class ModesFragment : Fragment() {
     private fun updateModeDescription(mode: VolumeControlMode) {
         modeDescriptionTextView.text = when (mode) {
             VolumeControlMode.OBSERVER ->
-                "Отслеживание: громкость считывается из системы Android и отправляется на Arduino при каждом изменении."
+                "Отслеживание: громкость считывается из системы Android и отправляется в адаптер при каждом изменении."
             VolumeControlMode.BUTTONS ->
                 "Кнопки: громкость изменяется на ±1 при каждом нажатии назначенной кнопки. Удерживайте кнопку для непрерывного изменения."
             VolumeControlMode.SCREEN ->

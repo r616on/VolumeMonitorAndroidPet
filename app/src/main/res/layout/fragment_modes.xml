@@ -43,7 +43,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
-        android:text="Выберите, каким способом приложение будет определять текущую громкость и отправлять её на Arduino."
+        android:text="Выберите, каким способом приложение будет определять текущую громкость и отправлять её в адаптер."
         android:textColor="#666666"
         android:textSize="14sp" />
 
