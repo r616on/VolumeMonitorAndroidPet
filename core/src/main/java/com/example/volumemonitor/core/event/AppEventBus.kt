@@ -45,4 +45,12 @@ sealed class AppEvent {
 
     /** Настройки максимальной громкости OBSERVER изменены */
     object ObserverSettingsChanged : AppEvent()
+
+    /** Состояние активного режима изменилось — для UI (MainFragment). */
+    data class ModeStateChanged(
+        val modeId: VolumeControlMode,
+        val currentVolume: Int,
+        val maxVolume: Int,
+        val displayLabel: String
+    ) : AppEvent()
 }

@@ -8,16 +8,13 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.hardware.usb.UsbDevice
 import android.hardware.usb.UsbManager
-import android.media.AudioManager
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import com.example.volumemonitor.core.event.AppEventBus
 import com.example.volumemonitor.core.event.AppEvent
-import com.example.volumemonitor.core.model.ButtonAction
 import com.example.volumemonitor.core.model.DeviceCommand
-import com.example.volumemonitor.core.model.MaxVolumeSource
 import com.example.volumemonitor.core.model.VolumeControlMode
 import com.example.volumemonitor.core.notification.NotificationController
 import com.example.volumemonitor.core.repository.SettingsRepository
@@ -25,40 +22,48 @@ import com.example.volumemonitor.core.repository.SettingsRepositoryImpl
 import com.example.volumemonitor.core.serialization.JsonCommandSerializer
 import com.example.volumemonitor.core.usb.UsbPortState
 import com.example.volumemonitor.core.usb.UsbSerialPortManager
-import com.example.volumemonitor.core.volume.VolumeObserver
+import com.example.volumemonitor.core.volume.mode.ButtonsMode
+import com.example.volumemonitor.core.volume.mode.CommandSender
+import com.example.volumemonitor.core.volume.mode.ObserverMode
+import com.example.volumemonitor.core.volume.mode.VolumeMode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlin.math.roundToInt
 
 class VolumeMonitorService : Service() {
     private val TAG = "VolumeMonitor"
 
-    private val audioManager: AudioManager by lazy { getSystemService(AUDIO_SERVICE) as AudioManager }
     private val usbManager: UsbManager by lazy { getSystemService(USB_SERVICE) as UsbManager }
 
     private lateinit var portManager: UsbSerialPortManager
-    private lateinit var volumeObserver: VolumeObserver
     private lateinit var notificationController: NotificationController
     private lateinit var settingsRepository: SettingsRepository
 
     private val commandSerializer = JsonCommandSerializer()
     private var selectedDevice: UsbDevice? = null
 
-    // ── Громкость в режиме BUTTONS ──
-    /** Текущая громкость в режиме BUTTONS (0..maxVolumeValue). */
-    private var buttonCurrentVolume: Int = 0
-
-    // ── Кешированный режим управления ──
-    /** Кеш VolumeControlMode — обновляется при старте и по событию VolumeControlModeChanged. */
-    private var cachedControlMode: VolumeControlMode = VolumeControlMode.OBSERVER
+    // ── Активный режим управления громкостью ──
+    private var activeMode: VolumeMode? = null
 
     private val binder: IBinder = LocalBinder()
     private val serviceScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+
+    // ── CommandSender: мост между режимом и сериал портом ──
+    private val commandSender: CommandSender by lazy {
+        CommandSender { target ->
+            if (!::portManager.isInitialized) {
+                Log.w(TAG, "commandSender: portManager не инициализирован, пропускаем отправку target=$target")
+                return@CommandSender
+            }
+            val cmd = DeviceCommand.SetVolume(target)
+            val json = commandSerializer.serialize(cmd)
+            val framed = commandSerializer.frame(json)
+            portManager.send(framed)
+            AppEventBus.tryEmit(AppEvent.SerialDataSent(json))
+        }
+    }
 
     private val usbReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -131,12 +136,26 @@ class VolumeMonitorService : Service() {
         AppEventBus.tryEmit(AppEvent.SerialDataSent(commandJson))
     }
 
-    private fun sendVolumeData(targetVolume: Int) {
-        val cmd = DeviceCommand.SetVolume(targetVolume)
-        val json = commandSerializer.serialize(cmd)
-        val framed = commandSerializer.frame(json)
-        portManager.send(framed)
-        AppEventBus.tryEmit(AppEvent.SerialDataSent(json))
+    // ── Управление режимами ──
+
+    private fun activateMode(modeId: VolumeControlMode) {
+        Log.d(TAG, "Активация режима: $modeId")
+        activeMode?.stop()
+        activeMode = when (modeId) {
+            VolumeControlMode.OBSERVER -> ObserverMode(
+                context = this,
+                commandSender = commandSender,
+                settingsRepository = settingsRepository,
+                appEvents = AppEventBus.events
+            )
+            VolumeControlMode.BUTTONS -> ButtonsMode(
+                context = this,
+                commandSender = commandSender,
+                settingsRepository = settingsRepository,
+                appEvents = AppEventBus.events
+            )
+        }
+        activeMode?.start()
     }
 
     override fun onCreate() {
@@ -147,85 +166,44 @@ class VolumeMonitorService : Service() {
         notificationController = NotificationController(this)
         settingsRepository = SettingsRepositoryImpl(this)
 
-        // Переопределение максимальной громкости для OBSERVER (если задано пользователем)
-        val observerMaxOverride = if (settingsRepository.getObserverMaxVolumeSource() == MaxVolumeSource.CUSTOM) {
-            val customMax = settingsRepository.getObserverCustomMaxVolume()
-            if (customMax > 0) customMax else audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
-        } else null
-        volumeObserver = VolumeObserver(this, audioManager, observerMaxOverride)
+        // Запуск сохранённого режима
+        val savedModeId = settingsRepository.getVolumeControlMode()
+        Log.d(TAG, "Режим управления: $savedModeId")
+        activateMode(savedModeId)
 
-        // Инициализируем кеш режима управления
-        cachedControlMode = settingsRepository.getVolumeControlMode()
-        Log.d(TAG, "Режим управления: $cachedControlMode")
+        // ── Реактивные подписки ──
 
-        // Восстанавливаем сохранённую громкость для режима BUTTONS
-        buttonCurrentVolume = settingsRepository.getButtonCurrentVolume()
-        Log.d(TAG, "Восстановлена громкость кнопок: $buttonCurrentVolume")
-
-        // Регистрируем VolumeObserver ДО запуска collect, чтобы избежать гонки
-        volumeObserver.register()
-
-        // Реактивное связывание через StateFlow
-        serviceScope.launch {
-            volumeObserver.volume.collect { data ->
-                AppEventBus.tryEmit(AppEvent.VolumeChanged(data.current, data.target))
-                if (cachedControlMode == VolumeControlMode.OBSERVER) {
-                    sendVolumeData(data.target)
-                }
-            }
-        }
+        // Данные от Arduino
         serviceScope.launch {
             portManager.dataFlow.collect { line ->
                 AppEventBus.tryEmit(AppEvent.ArduinoResponse(line))
             }
         }
+
+        // Статус USB-порта
         serviceScope.launch {
             portManager.state.collect { state ->
                 AppEventBus.tryEmit(AppEvent.UsbStatusChanged(state))
                 if (state is UsbPortState.Connected) {
-                    if (cachedControlMode == VolumeControlMode.BUTTONS) {
-                        syncButtonVolumeToPort()
-                    } else {
-                        val data = volumeObserver.currentVolumeData
-                        AppEventBus.tryEmit(AppEvent.VolumeChanged(data.current, data.target))
-                        sendVolumeData(data.target)
-                    }
+                    activeMode?.onUsbConnected()
                 }
             }
         }
 
-        // ── Подписка на нажатия кнопок ──
+        // События приложения
         serviceScope.launch {
             AppEventBus.events.collect { event ->
                 when (event) {
-                    is AppEvent.ButtonPressed -> {
-                        if (cachedControlMode == VolumeControlMode.BUTTONS) {
-                            handleButtonPress(event.action)
-                        }
-                    }
                     is AppEvent.VolumeControlModeChanged -> {
-                        cachedControlMode = event.mode
                         Log.d(TAG, "Режим управления изменён на: ${event.mode}")
-                        // При переключении в BUTTONS — сразу синхронизируем громкость
-                        if (event.mode == VolumeControlMode.BUTTONS) {
-                            syncButtonVolumeToPort()
-                        }
+                        activateMode(event.mode)
                     }
-                    is AppEvent.ObserverSettingsChanged -> {
-                        val override = if (settingsRepository.getObserverMaxVolumeSource() == MaxVolumeSource.CUSTOM) {
-                            val customMax = settingsRepository.getObserverCustomMaxVolume()
-                            if (customMax > 0) customMax else audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
-                        } else null
-                        // setMaxVolumeOverride обновляет _volume.value, что автоматически триггерит flow-коллектор
-                        // и вызывает sendVolumeData — дублировать явную отправку не нужно
-                        volumeObserver.setMaxVolumeOverride(override)
-                        Log.d(TAG, "ObserverSettingsChanged: override=$override")
-                    }
-                    else -> { /* другие события не обрабатываем */ }
+                    else -> { /* остальные события обрабатываются внутри режимов */ }
                 }
             }
         }
 
+        // USB-фильтр
         val usbFilter = IntentFilter().apply {
             addAction(Constants.ACTION_USB_PERMISSION)
             addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED)
@@ -239,56 +217,6 @@ class VolumeMonitorService : Service() {
 
         startForeground(Constants.NOTIFICATION_ID, notificationController.build())
         autoConnectSavedDevice()
-    }
-
-    // ── Обработка нажатий кнопок ──
-
-    /**
-     * Конвертирует громкость кнопок (0..maxVolume) в значение порта (0..255).
-     */
-    private fun buttonVolumeToPort(volume: Int, maxVolume: Int): Int =
-        (volume * 255.0 / maxVolume).roundToInt().coerceIn(0, 255)
-
-    /**
-     * Отправить текущий buttonCurrentVolume на устройство (конвертированный в 0..255).
-     * Используется при подключении USB и переключении в режим BUTTONS.
-     */
-    private fun syncButtonVolumeToPort() {
-        val maxVol = settingsRepository.getMaxVolumeValue().coerceAtLeast(1)
-        val portValue = buttonVolumeToPort(buttonCurrentVolume, maxVol)
-        Log.d(TAG, "Синхронизация громкости кнопок: vol=$buttonCurrentVolume/$maxVol → port=$portValue")
-        sendVolumeData(portValue)
-    }
-
-    /**
-     * Обрабатывает нажатие кнопки в режиме BUTTONS.
-     * Изменяет buttonCurrentVolume на ±1, конвертирует в порт (0..255) и отправляет.
-     * Сохраняет громкость с дебаунсом 500 мс, чтобы не писать в SharedPreferences
-     * на каждом тике долгого нажатия.
-     */
-    private fun handleButtonPress(action: ButtonAction) {
-        val maxVol = settingsRepository.getMaxVolumeValue().coerceAtLeast(1)
-        val newVolume = when (action) {
-            ButtonAction.VOLUME_UP -> (buttonCurrentVolume + 1).coerceIn(0, maxVol)
-            ButtonAction.VOLUME_DOWN -> (buttonCurrentVolume - 1).coerceIn(0, maxVol)
-        }
-        if (newVolume != buttonCurrentVolume) {
-            buttonCurrentVolume = newVolume
-            scheduleButtonVolumeSave()
-            val portValue = buttonVolumeToPort(buttonCurrentVolume, maxVol)
-            Log.d(TAG, "Кнопка: $action → vol=$buttonCurrentVolume/$maxVol → port=$portValue")
-            sendVolumeData(portValue)
-        }
-    }
-
-    private var buttonVolumeSaveJob: Job? = null
-
-    private fun scheduleButtonVolumeSave() {
-        buttonVolumeSaveJob?.cancel()
-        buttonVolumeSaveJob = serviceScope.launch {
-            delay(500L)
-            settingsRepository.saveButtonCurrentVolume(buttonCurrentVolume)
-        }
     }
 
     private fun autoConnectSavedDevice() {
@@ -309,9 +237,9 @@ class VolumeMonitorService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         Log.d(TAG, "=== Уничтожение сервиса ===")
+        activeMode?.stop()
         serviceScope.cancel()
         try { unregisterReceiver(usbReceiver) } catch (_: Exception) {}
-        volumeObserver.unregister()
         portManager.disconnect()
     }
 

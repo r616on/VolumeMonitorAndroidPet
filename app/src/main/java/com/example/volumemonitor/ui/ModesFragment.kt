@@ -24,14 +24,15 @@ import com.example.volumemonitor.core.repository.SettingsRepository
 import com.example.volumemonitor.core.repository.SettingsRepositoryImpl
 
 /**
- * Фрагмент общих настроек.
- * Позволяет выбрать режим управления громкостью:
+ * Фрагмент настройки режимов управления громкостью.
+ * Позволяет выбрать один режим и настроить его параметры.
+ * Доступные режимы:
  * - OBSERVER — отслеживание системной громкости
  * - BUTTONS — управление через назначенные кнопки
  */
-class GeneralSettingsFragment : Fragment() {
+class ModesFragment : Fragment() {
 
-    private val TAG = "GeneralSettingsFrag"
+    private val TAG = "ModesFragment"
 
     private lateinit var modeRadioGroup: RadioGroup
     private lateinit var modeDescriptionTextView: TextView
@@ -56,7 +57,7 @@ class GeneralSettingsFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View? {
-        return inflater.inflate(R.layout.fragment_general_settings, container, false)
+        return inflater.inflate(R.layout.fragment_modes, container, false)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -121,7 +122,6 @@ class GeneralSettingsFragment : Fragment() {
             }
             Log.d(TAG, "Выбран режим: $selectedMode (текущий: $currentMode)")
             pendingMode = selectedMode
-            // Показать/скрыть настройки макс. громкости в зависимости от режима
             observerMaxSettingsLayout.visibility = if (selectedMode == VolumeControlMode.OBSERVER) View.VISIBLE else View.GONE
             buttonMaxVolumeSettingsLayout.visibility = if (selectedMode == VolumeControlMode.BUTTONS) View.VISIBLE else View.GONE
             updateModeDescription(selectedMode)
@@ -151,7 +151,6 @@ class GeneralSettingsFragment : Fragment() {
                     }
                     shouldEmitObserverEvent = true
                 } else {
-                    // Невалидный ввод — сбрасываем к сохранённому значению, не эмитим событие
                     observerMaxVolumeEditText.setText(savedCustomMaxValue.toString())
                 }
             } else {
