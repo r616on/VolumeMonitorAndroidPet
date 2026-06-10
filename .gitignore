@@ -7,11 +7,30 @@
 /.idea/workspace.xml
 /.idea/navEditor.xml
 /.idea/assetWizardSettings.xml
+/.idea/deploymentTargetDropDown.xml
+/.idea/deploymentTargetSelector.xml
+/.idea/deviceManager.xml
+/.idea/studiobot.xml
+/.idea/appInsightsSettings.xml
+/.idea/runConfigurations.xml
 .DS_Store
 /build
-/core/build
 /captures
 .externalNativeBuild
 .cxx
 local.properties
 /app/release/
+
+# Build artifacts
+*.class
+*.jar
+*.dex
+*.apk
+*.aab
+*.ap_
+*.aplay
+*.bin
+
+# Android build directories
+/app/build/
+/core/build/
