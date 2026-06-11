@@ -42,11 +42,14 @@ class ModesFragment : Fragment() {
     private lateinit var observerMaxVolumeEditText: EditText
     private lateinit var buttonMaxVolumeSettingsLayout: View
     private lateinit var buttonMaxVolumeEditText: EditText
+    private lateinit var teyesMaxVolumeSettingsLayout: View
+    private lateinit var teyesMaxVolumeEditText: EditText
     private var currentMode: VolumeControlMode = VolumeControlMode.OBSERVER
     private var pendingMode: VolumeControlMode? = null
     private var currentMaxSource: MaxVolumeSource = MaxVolumeSource.SYSTEM
     private var savedCustomMaxValue: Int = 0
     private var savedButtonMaxValue: Int = 15
+    private var savedTeyesMaxValue: Int = 36
     private val settingsRepository: SettingsRepository by lazy {
         SettingsRepositoryImpl(requireContext())
     }
@@ -71,6 +74,8 @@ class ModesFragment : Fragment() {
         observerMaxVolumeEditText = view.findViewById(R.id.observerMaxVolumeEditText)
         buttonMaxVolumeSettingsLayout = view.findViewById(R.id.buttonMaxVolumeSettingsLayout)
         buttonMaxVolumeEditText = view.findViewById(R.id.buttonMaxVolumeEditText)
+        teyesMaxVolumeSettingsLayout = view.findViewById(R.id.teyesMaxVolumeSettingsLayout)
+        teyesMaxVolumeEditText = view.findViewById(R.id.teyesMaxVolumeEditText)
 
         // Восстанавливаем текущий режим
         currentMode = settingsRepository.getVolumeControlMode()
@@ -80,6 +85,7 @@ class ModesFragment : Fragment() {
             VolumeControlMode.BUTTONS -> modeRadioGroup.check(R.id.radioButtons)
             VolumeControlMode.SCREEN -> modeRadioGroup.check(R.id.radioScreen)
             VolumeControlMode.BUTTON_MATRIX -> modeRadioGroup.check(R.id.radioButtonMatrix)
+            VolumeControlMode.TEYES -> modeRadioGroup.check(R.id.radioTeyes)
         }
         updateModeDescription(currentMode)
 
@@ -87,6 +93,7 @@ class ModesFragment : Fragment() {
         val systemMaxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
         observerMaxSettingsLayout.visibility = if (currentMode == VolumeControlMode.OBSERVER) View.VISIBLE else View.GONE
         buttonMaxVolumeSettingsLayout.visibility = if (currentMode == VolumeControlMode.BUTTONS) View.VISIBLE else View.GONE
+        teyesMaxVolumeSettingsLayout.visibility = if (currentMode == VolumeControlMode.TEYES) View.VISIBLE else View.GONE
 
         // Восстанавливаем настройки макс. громкости OBSERVER
         currentMaxSource = settingsRepository.getObserverMaxVolumeSource()
@@ -99,6 +106,10 @@ class ModesFragment : Fragment() {
         // Восстанавливаем настройки макс. громкости BUTTONS
         savedButtonMaxValue = settingsRepository.getMaxVolumeValue()
         buttonMaxVolumeEditText.setText(savedButtonMaxValue.toString())
+
+        // Восстанавливаем настройки макс. громкости TEYES
+        savedTeyesMaxValue = settingsRepository.getTeyesMaxVolume()
+        teyesMaxVolumeEditText.setText(savedTeyesMaxValue.toString())
 
         useSystemMaxCheckBox.setOnCheckedChangeListener { _, isChecked ->
             currentMaxSource = if (isChecked) MaxVolumeSource.SYSTEM else MaxVolumeSource.CUSTOM
@@ -114,6 +125,10 @@ class ModesFragment : Fragment() {
             updateApplyButtonState()
         }
 
+        teyesMaxVolumeEditText.addTextChangedListener {
+            updateApplyButtonState()
+        }
+
         updateApplyButtonState()
 
         modeRadioGroup.setOnCheckedChangeListener { _, checkedId ->
@@ -122,12 +137,14 @@ class ModesFragment : Fragment() {
                 R.id.radioButtons -> VolumeControlMode.BUTTONS
                 R.id.radioScreen -> VolumeControlMode.SCREEN
                 R.id.radioButtonMatrix -> VolumeControlMode.BUTTON_MATRIX
+                R.id.radioTeyes -> VolumeControlMode.TEYES
                 else -> return@setOnCheckedChangeListener
             }
             Log.d(TAG, "Выбран режим: $selectedMode (текущий: $currentMode)")
             pendingMode = selectedMode
             observerMaxSettingsLayout.visibility = if (selectedMode == VolumeControlMode.OBSERVER) View.VISIBLE else View.GONE
             buttonMaxVolumeSettingsLayout.visibility = if (selectedMode == VolumeControlMode.BUTTONS) View.VISIBLE else View.GONE
+            teyesMaxVolumeSettingsLayout.visibility = if (selectedMode == VolumeControlMode.TEYES) View.VISIBLE else View.GONE
             updateModeDescription(selectedMode)
             updateApplyButtonState()
         }
@@ -164,6 +181,21 @@ class ModesFragment : Fragment() {
                 AppEventBus.tryEmit(AppEvent.ObserverSettingsChanged)
             }
 
+            // Сохраняем настройки макс. громкости TEYES
+            val teyesText = teyesMaxVolumeEditText.text.toString()
+            val teyesValue = teyesText.toIntOrNull()
+            if (teyesValue != null && teyesValue > 0) {
+                val safeTeyesValue = teyesValue.coerceIn(1, 100)
+                settingsRepository.saveTeyesMaxVolume(safeTeyesValue)
+                savedTeyesMaxValue = safeTeyesValue
+                if (safeTeyesValue != teyesValue) {
+                    teyesMaxVolumeEditText.setText(safeTeyesValue.toString())
+                }
+            } else {
+                teyesMaxVolumeEditText.setText(savedTeyesMaxValue.toString())
+            }
+            AppEventBus.tryEmit(AppEvent.TeyesSettingsChanged)
+
             // Сохраняем настройки макс. громкости BUTTONS
             val btnText = buttonMaxVolumeEditText.text.toString()
             val btnValue = btnText.toIntOrNull()
@@ -187,7 +219,9 @@ class ModesFragment : Fragment() {
         val valueChanged = currentMaxSource == MaxVolumeSource.CUSTOM && editTextValue != savedCustomMaxValue
         val btnMaxValue = buttonMaxVolumeEditText.text.toString().toIntOrNull() ?: 0
         val buttonMaxChanged = btnMaxValue > 0 && btnMaxValue != savedButtonMaxValue
-        applyButton.isEnabled = modeChanged || sourceChanged || valueChanged || buttonMaxChanged
+        val teyesMaxValue = teyesMaxVolumeEditText.text.toString().toIntOrNull() ?: 0
+        val teyesMaxChanged = teyesMaxValue > 0 && teyesMaxValue != savedTeyesMaxValue
+        applyButton.isEnabled = modeChanged || sourceChanged || valueChanged || buttonMaxChanged || teyesMaxChanged
     }
 
     private fun updateModeDescription(mode: VolumeControlMode) {
@@ -200,6 +234,8 @@ class ModesFragment : Fragment() {
                 "Экран: громкость регулируется ползунком на главном экране (15 положений)."
             VolumeControlMode.BUTTON_MATRIX ->
                 "Матрица: 6 кнопок (1–6). При нажатии отправляется button_down, при отпускании — button_up с номером кнопки. Кнопки можно нажимать с экрана или назначить физические клавиши."
+            VolumeControlMode.TEYES ->
+                "Teyes: режим для магнитол Teyes (SPRD uis8581a2h10). Громкость управляется с экрана (ползунок ±). При нажатии кнопок на руле происходит синхронизация текущего значения с Arduino. Обучение кнопок не требуется."
         }
     }
 }

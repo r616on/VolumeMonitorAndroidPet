@@ -42,6 +42,12 @@ interface SettingsRepository {
     fun removeMatrixButtonKeyCode(buttonNumber: Int, keyCode: Int)
     fun removeAllMatrixButtonKeyCodes(buttonNumber: Int)
 
+    // ── Teyes ──
+    fun getTeyesMaxVolume(): Int
+    fun saveTeyesMaxVolume(value: Int)
+    fun getTeyesCurrentVolume(): Int
+    fun saveTeyesCurrentVolume(volume: Int)
+
     // ── SetVolumeMemo ──
     fun getLastMemoVolume(): Int
     fun saveLastMemoVolume(volume: Int)

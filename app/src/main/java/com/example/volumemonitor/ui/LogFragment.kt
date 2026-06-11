@@ -86,11 +86,15 @@ class LogFragment : Fragment() {
                     AppEvent.ObserverSettingsChanged -> {
                         addEvent("Настройки максимальной громкости OBSERVER изменены")
                     }
+                    AppEvent.TeyesSettingsChanged -> {
+                        addEvent("Настройки Teyes изменены")
+                    }
                     is AppEvent.ModeStateChanged -> {}      // не логируется
                     is AppEvent.ScreenVolumeChanged -> {}  // не логируется
                     is AppEvent.MatrixButtonDown -> {}     // не логируется
                     is AppEvent.MatrixButtonUp -> {}       // не логируется
                     AppEvent.PresetNextPressed -> {}     // не логируется
+                    is AppEvent.TeyesVolumeRead -> {}  // не логируется
                 }
             }
         }
