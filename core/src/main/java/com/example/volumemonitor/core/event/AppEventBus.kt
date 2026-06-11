@@ -66,4 +66,7 @@ sealed class AppEvent {
     data class MatrixButtonUp(val buttonNumber: Int) : AppEvent() {
         init { require(buttonNumber in 1..6) { "Matrix button must be 1..6, got $buttonNumber" } }
     }
+
+    /** Нажатие кнопки «Пресет +» (физической или экранной). */
+    object PresetNextPressed : AppEvent()
 }

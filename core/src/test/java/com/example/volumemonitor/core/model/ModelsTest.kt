@@ -59,9 +59,10 @@ class ModelsTest {
     @Test
     fun buttonAction_enumValues() {
         val actions = ButtonAction.values()
-        assertEquals(2, actions.size)
+        assertEquals(3, actions.size)
         assertTrue(actions.contains(ButtonAction.VOLUME_UP))
         assertTrue(actions.contains(ButtonAction.VOLUME_DOWN))
+        assertTrue(actions.contains(ButtonAction.PRESET_NEXT))
     }
 
     @Test

@@ -39,6 +39,8 @@ class ButtonSettingsFragment : Fragment() {
     private lateinit var learnVolUpButton: Button
     private lateinit var volDownKeyCodesContainer: LinearLayout
     private lateinit var learnVolDownButton: Button
+    private lateinit var presetNextKeyCodesContainer: LinearLayout
+    private lateinit var learnPresetNextButton: Button
     private lateinit var matrixButtonsContainer: LinearLayout
     private lateinit var longPressDelayEditText: EditText
     private lateinit var resetAllButton: Button
@@ -60,6 +62,8 @@ class ButtonSettingsFragment : Fragment() {
         learnVolUpButton = view.findViewById(R.id.learnVolUpButton)
         volDownKeyCodesContainer = view.findViewById(R.id.volDownKeyCodesContainer)
         learnVolDownButton = view.findViewById(R.id.learnVolDownButton)
+        presetNextKeyCodesContainer = view.findViewById(R.id.presetNextKeyCodesContainer)
+        learnPresetNextButton = view.findViewById(R.id.learnPresetNextButton)
         matrixButtonsContainer = view.findViewById(R.id.matrixButtonsContainer)
         longPressDelayEditText = view.findViewById(R.id.longPressDelayEditText)
         resetAllButton = view.findViewById(R.id.resetAllButton)
@@ -78,6 +82,10 @@ class ButtonSettingsFragment : Fragment() {
             showLearnDialog(ButtonAction.VOLUME_DOWN)
         }
 
+        learnPresetNextButton.setOnClickListener {
+            showLearnDialog(ButtonAction.PRESET_NEXT)
+        }
+
         // ── Сохранение при потере фокуса ──
 
         longPressDelayEditText.setOnFocusChangeListener { _, hasFocus ->
@@ -93,6 +101,7 @@ class ButtonSettingsFragment : Fragment() {
         resetAllButton.setOnClickListener {
             settingsRepository.removeAllButtonKeyCodes(ButtonAction.VOLUME_UP)
             settingsRepository.removeAllButtonKeyCodes(ButtonAction.VOLUME_DOWN)
+            settingsRepository.removeAllButtonKeyCodes(ButtonAction.PRESET_NEXT)
             for (i in 1..6) {
                 settingsRepository.removeAllMatrixButtonKeyCodes(i)
             }
@@ -149,6 +158,11 @@ class ButtonSettingsFragment : Fragment() {
             volDownKeyCodesContainer,
             settingsRepository.getButtonKeyCodes(ButtonAction.VOLUME_DOWN),
             ButtonAction.VOLUME_DOWN
+        )
+        populateKeyCodeContainer(
+            presetNextKeyCodesContainer,
+            settingsRepository.getButtonKeyCodes(ButtonAction.PRESET_NEXT),
+            ButtonAction.PRESET_NEXT
         )
     }
 

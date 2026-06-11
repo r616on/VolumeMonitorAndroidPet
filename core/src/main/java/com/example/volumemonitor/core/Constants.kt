@@ -19,6 +19,7 @@ object Constants {
     const val PREFS_NAME_BUTTONS = "ButtonPrefs"
     const val KEY_BUTTON_VOLUME_UP = "button_volume_up"
     const val KEY_BUTTON_VOLUME_DOWN = "button_volume_down"
+    const val KEY_BUTTON_PRESET_NEXT = "button_preset_next"
     const val KEY_MAX_VOLUME_VALUE = "max_volume_value"
     const val KEY_BUTTON_CURRENT_VOLUME = "button_current_volume"
     const val KEY_LONG_PRESS_DELAY_MS = "long_press_delay_ms"

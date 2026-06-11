@@ -112,6 +112,7 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
     private fun prefKeyForAction(action: ButtonAction): String = when (action) {
         ButtonAction.VOLUME_UP -> Constants.KEY_BUTTON_VOLUME_UP
         ButtonAction.VOLUME_DOWN -> Constants.KEY_BUTTON_VOLUME_DOWN
+        ButtonAction.PRESET_NEXT -> Constants.KEY_BUTTON_PRESET_NEXT
     }
 
     override fun getMaxVolumeValue(): Int =

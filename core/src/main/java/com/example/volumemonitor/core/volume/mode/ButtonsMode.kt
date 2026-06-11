@@ -103,6 +103,7 @@ class ButtonsMode(
         val newVolume = when (action) {
             ButtonAction.VOLUME_UP -> (buttonCurrentVolume + 1).coerceIn(0, maxVol)
             ButtonAction.VOLUME_DOWN -> (buttonCurrentVolume - 1).coerceIn(0, maxVol)
+            ButtonAction.PRESET_NEXT -> return // не относится к управлению громкостью
         }
         if (newVolume != buttonCurrentVolume) {
             buttonCurrentVolume = newVolume

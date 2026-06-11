@@ -213,11 +213,7 @@ class MainFragment : Fragment() {
         }
 
         changePresetButton.setOnClickListener {
-            enterPresetLoadingState()
-            getService()?.sendCommand(DeviceCommand.ChangePreset)
-            presetHandler.postDelayed({
-                requestPresetWithTimeout()
-            }, CHANGE_PRESET_DELAY_MS)
+            changePresetLogic()
         }
 
         requestPresetButton.setOnClickListener {
@@ -260,6 +256,9 @@ class MainFragment : Fragment() {
                         if (preset != null) {
                             onPresetResponseReceived(preset)
                         }
+                    }
+                    is AppEvent.PresetNextPressed -> {
+                        changePresetLogic()
                     }
                     else -> {}
                 }
@@ -314,6 +313,19 @@ class MainFragment : Fragment() {
     }
 
     /** Отправить GetPreset и установить таймаут. */
+    /** Общая логика смены пресета: используется и наэкранными кнопками, и физической. */
+    private fun changePresetLogic() {
+        if (isWaitingForPreset) {
+            Log.w(TAG, "changePresetLogic: БЛОКИРУЕМ повторный вызов, isWaitingForPreset=$isWaitingForPreset")
+            return
+        }
+        enterPresetLoadingState()
+        getService()?.sendCommand(DeviceCommand.ChangePreset)
+        presetHandler.postDelayed({
+            requestPresetWithTimeout()
+        }, CHANGE_PRESET_DELAY_MS)
+    }
+
     private fun requestPresetWithTimeout() {
         getService()?.sendCommand(DeviceCommand.GetPreset)
         presetHandler.postDelayed({

@@ -47,6 +47,7 @@ class ButtonPressService : AccessibilityService() {
 
     private var volumeUpKeyCodes: Set<Int> = emptySet()
     private var volumeDownKeyCodes: Set<Int> = emptySet()
+    private var presetNextKeyCodes: Set<Int> = emptySet()
     private var longPressDelayMs: Long = Constants.DEFAULT_LONG_PRESS_DELAY_MS
 
     // ── Матрица кнопок ──
@@ -159,6 +160,11 @@ class ButtonPressService : AccessibilityService() {
         // Обычный режим — обработка назначенных кнопок
         when (event.action) {
             KeyEvent.ACTION_DOWN -> {
+                // Проверяем кнопку «Пресет +»
+                if (event.keyCode in presetNextKeyCodes) {
+                    handlePresetNextKeyDown(event.keyCode, event.repeatCount)
+                    return false
+                }
                 // Проверяем кнопки матрицы
                 val matrixButton = matrixKeyCodeToButton[event.keyCode]
                 if (matrixButton != null) {
@@ -255,6 +261,7 @@ class ButtonPressService : AccessibilityService() {
     fun reloadSettings() {
         volumeUpKeyCodes = settingsRepository.getButtonKeyCodes(ButtonAction.VOLUME_UP)
         volumeDownKeyCodes = settingsRepository.getButtonKeyCodes(ButtonAction.VOLUME_DOWN)
+        presetNextKeyCodes = settingsRepository.getButtonKeyCodes(ButtonAction.PRESET_NEXT)
         longPressDelayMs = settingsRepository.getLongPressDelayMs()
 
         // Загружаем keyCode для матрицы кнопок
@@ -267,13 +274,13 @@ class ButtonPressService : AccessibilityService() {
         }
         matrixKeyCodeToButton = map
 
-        // Предупреждение о пересечении keyCode между матрицей и Vol+/Vol-
-        val intersection = matrixKeyCodeToButton.keys.intersect(volumeUpKeyCodes + volumeDownKeyCodes)
+        // Предупреждение о пересечении keyCode между матрицей и Vol+/Vol-/PresetNext
+        val intersection = matrixKeyCodeToButton.keys.intersect(volumeUpKeyCodes + volumeDownKeyCodes + presetNextKeyCodes)
         if (intersection.isNotEmpty()) {
-            Log.w(TAG, "Обнаружено пересечение keyCode матрицы и Vol+/Vol-: $intersection")
+            Log.w(TAG, "Обнаружено пересечение keyCode матрицы и Vol+/Vol-/PresetNext: $intersection")
         }
 
-        Log.d(TAG, "Настройки загружены: volUp=$volumeUpKeyCodes, volDown=$volumeDownKeyCodes, longPressDelay=$longPressDelayMs, matrix=$matrixKeyCodeToButton")
+        Log.d(TAG, "Настройки загружены: volUp=$volumeUpKeyCodes, volDown=$volumeDownKeyCodes, presetNext=$presetNextKeyCodes, longPressDelay=$longPressDelayMs, matrix=$matrixKeyCodeToButton")
     }
 
     // ── Обработка кнопок матрицы ──
@@ -289,5 +296,13 @@ class ButtonPressService : AccessibilityService() {
     private fun handleMatrixKeyUp(keyCode: Int, buttonNumber: Int) {
         Log.d(TAG, "Матрица: кнопка $buttonNumber отпущена (keyCode=$keyCode)")
         AppEventBus.tryEmit(AppEvent.MatrixButtonUp(buttonNumber))
+    }
+    // ── Обработка кнопки «Пресет +» ──
+
+    /** Нажатие физической кнопки, привязанной к «Пресет +». */
+    private fun handlePresetNextKeyDown(keyCode: Int, repeatCount: Int) {
+        if (repeatCount > 0) return // игнорируем автоповтор
+        Log.d(TAG, "Пресет +: нажатие (keyCode=$keyCode)")
+        AppEventBus.tryEmit(AppEvent.PresetNextPressed)
     }
 }
