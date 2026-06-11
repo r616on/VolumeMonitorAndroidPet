@@ -24,6 +24,13 @@ sealed class DeviceCommand {
         override fun toJson() = """{"command":"$commandName","value":$value}"""
     }
 
+    /** Сохранить громкость в энергонезависимую память адаптера (0..255). */
+    data class SetVolumeMemo(val value: Int) : DeviceCommand() {
+        override val commandName = "set_volume_memo"
+        init { require(value in 0..255) { "Volume must be 0..255, got $value" } }
+        override fun toJson() = """{"command":"$commandName","value":$value}"""
+    }
+
     /** Установить уровень баса (0..255). */
     data class SetBassLevel(val value: Int) : DeviceCommand() {
         override val commandName = "set_bass_level"

@@ -21,6 +21,7 @@ import com.example.volumemonitor.core.repository.SettingsRepository
 import com.example.volumemonitor.core.repository.SettingsRepositoryImpl
 import com.example.volumemonitor.core.usb.UsbPortState
 import com.example.volumemonitor.core.usb.UsbSerialPortManager
+import com.example.volumemonitor.core.volume.memo.VolumeMemoManager
 import com.example.volumemonitor.core.volume.mode.ButtonsMode
 import com.example.volumemonitor.core.volume.mode.CommandSender
 import com.example.volumemonitor.core.volume.mode.ObserverMode
@@ -50,7 +51,8 @@ class VolumeMonitorService : Service() {
     private val serviceScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 
     // ── CommandSender: мост между режимом и сериал портом ──
-    private val commandSender: CommandSender by lazy {
+    // rawCommandSender — реальная отправка в порт (без debounce)
+    private val rawCommandSender: CommandSender by lazy {
         CommandSender { command ->
             if (!::portManager.isInitialized) {
                 Log.w(TAG, "commandSender: portManager не инициализирован, пропускаем отправку $command")
@@ -61,6 +63,15 @@ class VolumeMonitorService : Service() {
             portManager.send(framed)
             AppEventBus.tryEmit(AppEvent.SerialDataSent(json))
         }
+    }
+
+    // commandSender — обёрнут в VolumeMemoManager для debounce-отправки SetVolumeMemo
+    private val commandSender: CommandSender by lazy {
+        VolumeMemoManager(
+            delegate = rawCommandSender,
+            settingsRepository = settingsRepository,
+            scope = serviceScope
+        )
     }
 
     private val usbReceiver = object : BroadcastReceiver() {
@@ -242,6 +253,7 @@ class VolumeMonitorService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         Log.d(TAG, "=== Уничтожение сервиса ===")
+        (commandSender as? VolumeMemoManager)?.cancelPending()
         activeMode?.stop()
         serviceScope.cancel()
         try { unregisterReceiver(usbReceiver) } catch (_: Exception) {}

@@ -35,4 +35,8 @@ interface SettingsRepository {
     // ── Управление с экрана ──
     fun getScreenCurrentVolume(): Int
     fun saveScreenCurrentVolume(volume: Int)
+
+    // ── SetVolumeMemo ──
+    fun getLastMemoVolume(): Int
+    fun saveLastMemoVolume(volume: Int)
 }

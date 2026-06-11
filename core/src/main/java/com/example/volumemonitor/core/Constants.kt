@@ -37,6 +37,10 @@ object Constants {
     const val SCREEN_MAX_POSITION = 14          // 15 положений (0..14)
     const val KEY_SCREEN_CURRENT_VOLUME = "screen_current_volume"
 
+    // ── SetVolumeMemo ──
+    const val KEY_LAST_MEMO_VOLUME = "last_memo_volume"   // Int: последнее записанное в память значение (0..255), -1 если ещё нет
+    const val MEMO_DEBOUNCE_MS = 20_000L                   // задержка перед отправкой SetVolumeMemo
+
     // ── Значения по умолчанию для кнопок ──
     const val DEFAULT_MAX_VOLUME_VALUE = 15
     const val DEFAULT_LONG_PRESS_DELAY_MS = 500L

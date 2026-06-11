@@ -142,4 +142,13 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
     override fun saveScreenCurrentVolume(volume: Int) {
         generalPrefs.edit().putInt(Constants.KEY_SCREEN_CURRENT_VOLUME, volume).apply()
     }
+
+    // ── SetVolumeMemo ──
+
+    override fun getLastMemoVolume(): Int =
+        generalPrefs.getInt(Constants.KEY_LAST_MEMO_VOLUME, -1)
+
+    override fun saveLastMemoVolume(volume: Int) {
+        generalPrefs.edit().putInt(Constants.KEY_LAST_MEMO_VOLUME, volume).apply()
+    }
 }
