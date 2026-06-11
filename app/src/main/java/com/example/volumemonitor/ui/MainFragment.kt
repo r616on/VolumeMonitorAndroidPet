@@ -10,6 +10,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.ProgressBar
 import android.widget.SeekBar
 import android.widget.TextView
 import androidx.fragment.app.Fragment
@@ -60,9 +61,18 @@ class MainFragment : Fragment() {
     private val commandSerializer = JsonCommandSerializer()
 
     private var lastSentBassLevel: Int? = null
-    private var presetButtonsRunnable: Runnable? = null
-    private var currentPreset: Int = 1
+    private var currentPreset: Int = 0
     private var lastUsbStatus: UsbPortState = UsbPortState.Initializing
+
+    // ── Состояние загрузки пресета ──
+    private lateinit var presetProgressBar: ProgressBar
+    private val presetHandler = Handler(Looper.getMainLooper())
+    private var isWaitingForPreset = false
+
+    companion object {
+        private const val CHANGE_PRESET_DELAY_MS = 10_000L
+        private const val PRESET_RESPONSE_TIMEOUT_MS = 5_000L
+    }
 
     private fun getService(): VolumeMonitorService? =
         (requireActivity() as? MainActivity)?.volumeService
@@ -120,6 +130,7 @@ class MainFragment : Fragment() {
         bassPlusButton = view.findViewById(R.id.bassPlusButton)
         changePresetButton = view.findViewById(R.id.changePresetButton)
         requestPresetButton = view.findViewById(R.id.requestPresetButton)
+        presetProgressBar = view.findViewById(R.id.presetProgressBar)
 
         val savedBass = loadBassLevel()
         bassSeekBar.progress = savedBass
@@ -185,13 +196,16 @@ class MainFragment : Fragment() {
         }
 
         changePresetButton.setOnClickListener {
+            enterPresetLoadingState()
             getService()?.sendCommand(commandSerializer.serialize(DeviceCommand.ChangePreset))
-            disablePresetButtonsTemporarily()
+            presetHandler.postDelayed({
+                requestPresetWithTimeout()
+            }, CHANGE_PRESET_DELAY_MS)
         }
 
         requestPresetButton.setOnClickListener {
-            getService()?.sendCommand(commandSerializer.serialize(DeviceCommand.GetPreset))
-            disablePresetButtonsTemporarily()
+            enterPresetLoadingState()
+            requestPresetWithTimeout()
         }
 
         // Подписка на события через SharedFlow
@@ -216,12 +230,16 @@ class MainFragment : Fragment() {
                     is AppEvent.UsbStatusChanged -> {
                         lastUsbStatus = event.status
                         updateUsbStatus()
+                        if (event.status is UsbPortState.Connected) {
+                            // При USB-подключении синхронизировать пресет
+                            enterPresetLoadingState()
+                            requestPresetWithTimeout()
+                        }
                     }
                     is AppEvent.ArduinoResponse -> {
                         val preset = parsePresetResponse(event.rawLine)
                         if (preset != null) {
-                            currentPreset = preset
-                            presetTextView.text = "$preset"
+                            onPresetResponseReceived(preset)
                         }
                     }
                     else -> {}
@@ -232,6 +250,10 @@ class MainFragment : Fragment() {
         // Начальное отображение громкости
         refreshVolumeDisplay()
         updateUsbStatus()
+
+        // Авто-запрос пресета при старте
+        enterPresetLoadingState()
+        requestPresetWithTimeout()
     }
 
     override fun onResume() {
@@ -242,19 +264,54 @@ class MainFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
-        presetButtonsRunnable?.let { Handler(Looper.getMainLooper()).removeCallbacks(it) }
+        presetHandler.removeCallbacksAndMessages(null)
     }
 
-    private fun disablePresetButtonsTemporarily() {
-        requestPresetButton.isEnabled = false
+    // ── Управление состоянием загрузки пресета ──
+
+    /** Заблокировать кнопки, показать спиннер, скрыть текст пресета. */
+    private fun enterPresetLoadingState() {
+        isWaitingForPreset = true
+        presetTextView.visibility = View.GONE
+        presetProgressBar.visibility = View.VISIBLE
         changePresetButton.isEnabled = false
-        presetButtonsRunnable?.let { Handler(Looper.getMainLooper()).removeCallbacks(it) }
-        val runnable = Runnable {
-            requestPresetButton.isEnabled = true
-            changePresetButton.isEnabled = true
+        requestPresetButton.isEnabled = false
+    }
+
+    /** Разблокировать кнопки, скрыть спиннер, показать текст пресета. */
+    private fun exitPresetLoadingState(presetNumber: Int?) {
+        isWaitingForPreset = false
+        presetHandler.removeCallbacksAndMessages(null)
+        presetProgressBar.visibility = View.GONE
+        presetTextView.visibility = View.VISIBLE
+        if (presetNumber != null) {
+            currentPreset = presetNumber
+            presetTextView.text = "$presetNumber"
+        } else {
+            presetTextView.text = "0"
         }
-        presetButtonsRunnable = runnable
-        Handler(Looper.getMainLooper()).postDelayed(runnable, 3000)
+        changePresetButton.isEnabled = true
+        requestPresetButton.isEnabled = true
+    }
+
+    /** Отправить GetPreset и установить таймаут. */
+    private fun requestPresetWithTimeout() {
+        getService()?.sendCommand(commandSerializer.serialize(DeviceCommand.GetPreset))
+        presetHandler.postDelayed({
+            Log.w(TAG, "Таймаут ожидания ответа пресета")
+            exitPresetLoadingState(null)
+        }, PRESET_RESPONSE_TIMEOUT_MS)
+    }
+
+    /** Обработка пришедшего ответа preset_changed от Arduino. */
+    private fun onPresetResponseReceived(preset: Int) {
+        if (isWaitingForPreset) {
+            exitPresetLoadingState(preset)
+        } else {
+            // Ответ пришёл вне активного ожидания — просто обновляем текст
+            currentPreset = preset
+            presetTextView.text = "$preset"
+        }
     }
 
     private fun updateUsbStatus() {

@@ -172,6 +172,14 @@
             android:text="0"
             android:textColor="?android:attr/textColorPrimary"
             android:textSize="22sp"  />
+
+        <ProgressBar
+            android:id="@+id/presetProgressBar"
+            style="?android:attr/progressBarStyleSmall"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_marginStart="8dp"
+            android:visibility="gone" />
         </LinearLayout>
 
         <Button
