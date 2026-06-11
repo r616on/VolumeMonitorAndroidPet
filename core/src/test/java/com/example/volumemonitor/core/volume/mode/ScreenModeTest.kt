@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import com.example.volumemonitor.core.Constants
 import com.example.volumemonitor.core.event.AppEvent
+import com.example.volumemonitor.core.model.DeviceCommand
 import com.example.volumemonitor.core.model.VolumeControlMode
 import com.example.volumemonitor.core.repository.SettingsRepository
 import io.mockk.every
@@ -83,7 +84,7 @@ class ScreenModeTest {
     @Test
     fun `ScreenVolumeChanged event sends volume to commandSender`() = runTest(testDispatcher) {
         every { mockSettingsRepo.getScreenCurrentVolume() } returns 0
-        every { mockCommandSender.sendVolume(any()) } just runs
+        every { mockCommandSender.send(any<DeviceCommand>()) } just runs
 
         val mode = createMode()
         mode.start()
@@ -92,7 +93,7 @@ class ScreenModeTest {
         appEventFlow.emit(AppEvent.ScreenVolumeChanged(14))
         advanceUntilIdle()
 
-        verify(atLeast = 1) { mockCommandSender.sendVolume(any()) }
+        verify(atLeast = 1) { mockCommandSender.send(any<DeviceCommand>()) }
         assertEquals(14, mode.state.value.currentVolume)
         assertEquals(Constants.SCREEN_MAX_POSITION, mode.state.value.maxVolume)
     }
@@ -100,7 +101,7 @@ class ScreenModeTest {
     @Test
     fun `ScreenVolumeChanged with zero sends zero to port`() = runTest(testDispatcher) {
         every { mockSettingsRepo.getScreenCurrentVolume() } returns 10
-        every { mockCommandSender.sendVolume(any()) } just runs
+        every { mockCommandSender.send(any<DeviceCommand>()) } just runs
 
         val mode = createMode()
         mode.start()
@@ -109,14 +110,14 @@ class ScreenModeTest {
         appEventFlow.emit(AppEvent.ScreenVolumeChanged(0))
         advanceUntilIdle()
 
-        verify { mockCommandSender.sendVolume(0) }
+        verify { mockCommandSender.send(DeviceCommand.SetVolume(0)) }
         assertEquals(0, mode.state.value.currentVolume)
     }
 
     @Test
     fun `duplicate volume value does not trigger redundant send`() = runTest(testDispatcher) {
         every { mockSettingsRepo.getScreenCurrentVolume() } returns 5
-        every { mockCommandSender.sendVolume(any()) } just runs
+        every { mockCommandSender.send(any<DeviceCommand>()) } just runs
 
         val mode = createMode()
         mode.start()
@@ -126,13 +127,13 @@ class ScreenModeTest {
         advanceUntilIdle()
 
         assertEquals(5, mode.state.value.currentVolume)
-        verify(exactly = 0) { mockCommandSender.sendVolume(any()) }
+        verify(exactly = 0) { mockCommandSender.send(any<DeviceCommand>()) }
     }
 
     @Test
     fun `out-of-range volume is clamped`() = runTest(testDispatcher) {
         every { mockSettingsRepo.getScreenCurrentVolume() } returns 0
-        every { mockCommandSender.sendVolume(any()) } just runs
+        every { mockCommandSender.send(any<DeviceCommand>()) } just runs
 
         val mode = createMode()
         mode.start()
@@ -147,7 +148,7 @@ class ScreenModeTest {
     @Test
     fun `negative volume is clamped to zero`() = runTest(testDispatcher) {
         every { mockSettingsRepo.getScreenCurrentVolume() } returns 5
-        every { mockCommandSender.sendVolume(any()) } just runs
+        every { mockCommandSender.send(any<DeviceCommand>()) } just runs
 
         val mode = createMode()
         mode.start()
@@ -162,7 +163,7 @@ class ScreenModeTest {
     @Test
     fun `onUsbConnected syncs volume and emits state`() = runTest(testDispatcher) {
         every { mockSettingsRepo.getScreenCurrentVolume() } returns 3
-        every { mockCommandSender.sendVolume(any()) } just runs
+        every { mockCommandSender.send(any<DeviceCommand>()) } just runs
 
         val mode = createMode()
         mode.start()
@@ -171,7 +172,7 @@ class ScreenModeTest {
         mode.onUsbConnected()
         advanceUntilIdle()
 
-        verify(atLeast = 1) { mockCommandSender.sendVolume(any()) }
+        verify(atLeast = 1) { mockCommandSender.send(any<DeviceCommand>()) }
         assertEquals(3, mode.state.value.currentVolume)
     }
 
@@ -197,7 +198,7 @@ class ScreenModeTest {
     @Test
     fun `multiple volume changes update state sequentially`() = runTest(testDispatcher) {
         every { mockSettingsRepo.getScreenCurrentVolume() } returns 0
-        every { mockCommandSender.sendVolume(any()) } just runs
+        every { mockCommandSender.send(any<DeviceCommand>()) } just runs
 
         val mode = createMode()
         mode.start()
@@ -215,6 +216,6 @@ class ScreenModeTest {
         advanceUntilIdle()
         assertEquals(14, mode.state.value.currentVolume)
 
-        verify(exactly = 3) { mockCommandSender.sendVolume(any()) }
+        verify(exactly = 3) { mockCommandSender.send(any<DeviceCommand>()) }
     }
 }

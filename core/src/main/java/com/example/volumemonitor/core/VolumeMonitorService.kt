@@ -19,7 +19,6 @@ import com.example.volumemonitor.core.model.VolumeControlMode
 import com.example.volumemonitor.core.notification.NotificationController
 import com.example.volumemonitor.core.repository.SettingsRepository
 import com.example.volumemonitor.core.repository.SettingsRepositoryImpl
-import com.example.volumemonitor.core.serialization.JsonCommandSerializer
 import com.example.volumemonitor.core.usb.UsbPortState
 import com.example.volumemonitor.core.usb.UsbSerialPortManager
 import com.example.volumemonitor.core.volume.mode.ButtonsMode
@@ -42,7 +41,6 @@ class VolumeMonitorService : Service() {
     private lateinit var notificationController: NotificationController
     private lateinit var settingsRepository: SettingsRepository
 
-    private val commandSerializer = JsonCommandSerializer()
     private var selectedDevice: UsbDevice? = null
 
     // ── Активный режим управления громкостью ──
@@ -53,14 +51,13 @@ class VolumeMonitorService : Service() {
 
     // ── CommandSender: мост между режимом и сериал портом ──
     private val commandSender: CommandSender by lazy {
-        CommandSender { target ->
+        CommandSender { command ->
             if (!::portManager.isInitialized) {
-                Log.w(TAG, "commandSender: portManager не инициализирован, пропускаем отправку target=$target")
+                Log.w(TAG, "commandSender: portManager не инициализирован, пропускаем отправку $command")
                 return@CommandSender
             }
-            val cmd = DeviceCommand.SetVolume(target)
-            val json = commandSerializer.serialize(cmd)
-            val framed = commandSerializer.frame(json)
+            val json = command.toJson()
+            val framed = DeviceCommand.frame(json)
             portManager.send(framed)
             AppEventBus.tryEmit(AppEvent.SerialDataSent(json))
         }
@@ -131,10 +128,11 @@ class VolumeMonitorService : Service() {
         }
     }
 
-    fun sendCommand(commandJson: String) {
-        val framed = commandSerializer.frame(commandJson)
+    fun sendCommand(command: DeviceCommand) {
+        val json = command.toJson()
+        val framed = DeviceCommand.frame(json)
         portManager.send(framed)
-        AppEventBus.tryEmit(AppEvent.SerialDataSent(commandJson))
+        AppEventBus.tryEmit(AppEvent.SerialDataSent(json))
     }
 
     // ── Управление режимами ──

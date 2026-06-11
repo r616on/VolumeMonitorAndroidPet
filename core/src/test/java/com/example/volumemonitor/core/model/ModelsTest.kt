@@ -101,4 +101,81 @@ class ModelsTest {
         val state: UsbPortState = UsbPortState.Error("Timeout")
         assertEquals("Ошибка: Timeout", state.displayText)
     }
+
+    // ── DeviceCommand toJson и commandName ──
+
+    @Test
+    fun deviceCommand_setVolume_toJson() {
+        val json = DeviceCommand.SetVolume(100).toJson()
+        assertEquals("""{"command":"set_volume","value":100}""", json)
+    }
+
+    @Test
+    fun deviceCommand_setBassLevel_toJson() {
+        val json = DeviceCommand.SetBassLevel(200).toJson()
+        assertEquals("""{"command":"set_bass_level","value":200}""", json)
+    }
+
+    @Test
+    fun deviceCommand_changePreset_toJson() {
+        val json = DeviceCommand.ChangePreset.toJson()
+        assertEquals("""{"command":"change_preset"}""", json)
+    }
+
+    @Test
+    fun deviceCommand_getPreset_toJson() {
+        val json = DeviceCommand.GetPreset.toJson()
+        assertEquals("""{"command":"get_preset"}""", json)
+    }
+
+    @Test
+    fun deviceCommand_commandName_setVolume() {
+        assertEquals("set_volume", DeviceCommand.SetVolume(5).commandName)
+    }
+
+    @Test
+    fun deviceCommand_commandName_setBassLevel() {
+        assertEquals("set_bass_level", DeviceCommand.SetBassLevel(5).commandName)
+    }
+
+    @Test
+    fun deviceCommand_commandName_changePreset() {
+        assertEquals("change_preset", DeviceCommand.ChangePreset.commandName)
+    }
+
+    @Test
+    fun deviceCommand_commandName_getPreset() {
+        assertEquals("get_preset", DeviceCommand.GetPreset.commandName)
+    }
+
+    // ── Валидация параметров ──
+
+    @Test(expected = IllegalArgumentException::class)
+    fun deviceCommand_setVolume_rejectsNegative() {
+        DeviceCommand.SetVolume(-1)
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun deviceCommand_setVolume_rejectsOverflow() {
+        DeviceCommand.SetVolume(256)
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun deviceCommand_setBassLevel_rejectsNegative() {
+        DeviceCommand.SetBassLevel(-1)
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun deviceCommand_setBassLevel_rejectsOverflow() {
+        DeviceCommand.SetBassLevel(256)
+    }
+
+    // ── Фреймирование ──
+
+    @Test
+    fun deviceCommand_frame_wrapsJson() {
+        val result = DeviceCommand.frame("""{"command":"get_preset"}""")
+        val expected = "[{\"command\":\"get_preset\"}]\n".toByteArray(Charsets.UTF_8)
+        org.junit.Assert.assertArrayEquals(expected, result)
+    }
 }

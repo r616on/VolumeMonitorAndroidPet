@@ -5,6 +5,7 @@ import android.util.Log
 import com.example.volumemonitor.core.Constants
 import com.example.volumemonitor.core.event.AppEvent
 import com.example.volumemonitor.core.event.AppEventBus
+import com.example.volumemonitor.core.model.DeviceCommand
 import com.example.volumemonitor.core.model.VolumeControlMode
 import com.example.volumemonitor.core.repository.SettingsRepository
 import com.example.volumemonitor.core.volume.VolumeMath
@@ -81,7 +82,7 @@ class ScreenMode(
     private fun syncScreenVolumeToPort() {
         val portValue = screenPositionToPort(screenCurrentVolume)
         Log.d(TAG, "Синхронизация громкости экрана: pos=$screenCurrentVolume/${Constants.SCREEN_MAX_POSITION} → port=$portValue")
-        commandSender.sendVolume(portValue)
+        commandSender.send(DeviceCommand.SetVolume(portValue))
     }
 
     /** Обрабатывает изменение ползунка: конвертирует в порт, отправляет, сохраняет. */
@@ -92,7 +93,7 @@ class ScreenMode(
             scheduleScreenVolumeSave()
             val portValue = screenPositionToPort(screenCurrentVolume)
             Log.d(TAG, "Ползунок: pos=$screenCurrentVolume/${Constants.SCREEN_MAX_POSITION} → port=$portValue")
-            commandSender.sendVolume(portValue)
+            commandSender.send(DeviceCommand.SetVolume(portValue))
             val modeState = ModeState(screenCurrentVolume, Constants.SCREEN_MAX_POSITION, "экран")
             _state.value = modeState
             emitModeState(modeState)

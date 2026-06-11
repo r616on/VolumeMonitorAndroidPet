@@ -1,8 +1,55 @@
 package com.example.volumemonitor.core.model
 
+/**
+ * Единый реестр команд, отправляемых в serial port.
+ *
+ * Каждый подкласс инкапсулирует свой wire-формат: имя команды, JSON-сериализацию,
+ * валидацию параметров. Добавление новой команды — новый подкласс в этом файле.
+ *
+ * Фреймирование (обрамление "[...]\n") — общее для всех команд, вынесено в [frame].
+ */
 sealed class DeviceCommand {
-    data class SetVolume(val value: Int) : DeviceCommand()
-    data class SetBassLevel(val value: Int) : DeviceCommand()
-    object ChangePreset : DeviceCommand()
-    object GetPreset : DeviceCommand()
+    /** Имя команды в JSON-поле "command" (например "set_volume"). */
+    abstract val commandName: String
+
+    /** Сериализовать команду в JSON-строку для отправки в порт. */
+    abstract fun toJson(): String
+
+    // ── Команды ──────────────────────────────────────────────
+
+    /** Установить громкость (0..255). */
+    data class SetVolume(val value: Int) : DeviceCommand() {
+        override val commandName = "set_volume"
+        init { require(value in 0..255) { "Volume must be 0..255, got $value" } }
+        override fun toJson() = """{"command":"$commandName","value":$value}"""
+    }
+
+    /** Установить уровень баса (0..255). */
+    data class SetBassLevel(val value: Int) : DeviceCommand() {
+        override val commandName = "set_bass_level"
+        init { require(value in 0..255) { "Bass level must be 0..255, got $value" } }
+        override fun toJson() = """{"command":"$commandName","value":$value}"""
+    }
+
+    /** Переключить на следующий пресет (без параметров). */
+    object ChangePreset : DeviceCommand() {
+        override val commandName = "change_preset"
+        override fun toJson() = """{"command":"$commandName"}"""
+    }
+
+    /** Запросить текущий пресет (без параметров). */
+    object GetPreset : DeviceCommand() {
+        override val commandName = "get_preset"
+        override fun toJson() = """{"command":"$commandName"}"""
+    }
+
+    // ── Фреймирование ────────────────────────────────────────
+
+    companion object {
+        /**
+         * Обрамить JSON-строку для отправки в serial port.
+         * Формат: "[json]\n" — требование прошивки Arduino.
+         */
+        fun frame(json: String): ByteArray = "[$json]\n".toByteArray(Charsets.UTF_8)
+    }
 }

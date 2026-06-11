@@ -5,6 +5,7 @@ import android.media.AudioManager
 import android.util.Log
 import com.example.volumemonitor.core.event.AppEvent
 import com.example.volumemonitor.core.event.AppEventBus
+import com.example.volumemonitor.core.model.DeviceCommand
 import com.example.volumemonitor.core.model.MaxVolumeSource
 import com.example.volumemonitor.core.model.VolumeControlMode
 import com.example.volumemonitor.core.repository.SettingsRepository
@@ -56,7 +57,7 @@ class ObserverMode(
         modeScope.launch {
             volumeObserver.volume.collect { data ->
                 AppEventBus.tryEmit(AppEvent.VolumeChanged(data.current, data.target))
-                commandSender.sendVolume(data.target)
+                commandSender.send(DeviceCommand.SetVolume(data.target))
                 val isCustom = settingsRepository.getObserverMaxVolumeSource() == MaxVolumeSource.CUSTOM
                 val modeState = ModeState(
                     currentVolume = data.current.coerceAtMost(data.max),
@@ -96,7 +97,7 @@ class ObserverMode(
     override fun onUsbConnected() {
         val data = volumeObserver.currentVolumeData
         AppEventBus.tryEmit(AppEvent.VolumeChanged(data.current, data.target))
-        commandSender.sendVolume(data.target)
+        commandSender.send(DeviceCommand.SetVolume(data.target))
         Log.d(TAG, "USB Connected: синхронизация громкости ${data.current}/${data.max} → target=${data.target}")
     }
 }

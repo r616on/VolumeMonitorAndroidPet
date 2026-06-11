@@ -5,6 +5,7 @@ import android.util.Log
 import com.example.volumemonitor.core.event.AppEvent
 import com.example.volumemonitor.core.event.AppEventBus
 import com.example.volumemonitor.core.model.ButtonAction
+import com.example.volumemonitor.core.model.DeviceCommand
 import com.example.volumemonitor.core.model.VolumeControlMode
 import com.example.volumemonitor.core.repository.SettingsRepository
 import com.example.volumemonitor.core.volume.VolumeMath
@@ -93,7 +94,7 @@ class ButtonsMode(
         val maxVol = settingsRepository.getMaxVolumeValue().coerceAtLeast(1)
         val portValue = buttonVolumeToPort(buttonCurrentVolume, maxVol)
         Log.d(TAG, "Синхронизация громкости кнопок: vol=$buttonCurrentVolume/$maxVol → port=$portValue")
-        commandSender.sendVolume(portValue)
+        commandSender.send(DeviceCommand.SetVolume(portValue))
     }
 
     /** Обрабатывает нажатие кнопки: ±1, конвертирует в порт, отправляет. */
@@ -108,7 +109,7 @@ class ButtonsMode(
             scheduleButtonVolumeSave()
             val portValue = buttonVolumeToPort(buttonCurrentVolume, maxVol)
             Log.d(TAG, "Кнопка: $action → vol=$buttonCurrentVolume/$maxVol → port=$portValue")
-            commandSender.sendVolume(portValue)
+            commandSender.send(DeviceCommand.SetVolume(portValue))
             val modeState = ModeState(buttonCurrentVolume, maxVol, "кнопки")
             _state.value = modeState
             emitModeState(modeState)

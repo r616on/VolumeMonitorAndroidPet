@@ -28,7 +28,6 @@ import com.example.volumemonitor.core.model.MaxVolumeSource
 import com.example.volumemonitor.core.model.VolumeControlMode
 import com.example.volumemonitor.core.repository.SettingsRepository
 import com.example.volumemonitor.core.repository.SettingsRepositoryImpl
-import com.example.volumemonitor.core.serialization.JsonCommandSerializer
 import com.example.volumemonitor.core.usb.UsbPortState
 import com.example.volumemonitor.core.usb.displayText
 import kotlinx.coroutines.launch
@@ -58,7 +57,6 @@ class MainFragment : Fragment() {
 
     private val audioManager: AudioManager by lazy { requireActivity().getSystemService(Context.AUDIO_SERVICE) as AudioManager }
     private val settingsRepository: SettingsRepository by lazy { SettingsRepositoryImpl(requireContext()) }
-    private val commandSerializer = JsonCommandSerializer()
 
     private var lastSentBassLevel: Int? = null
     private var currentPreset: Int = 0
@@ -101,8 +99,7 @@ class MainFragment : Fragment() {
 
     private fun sendBassCommand(level: Int) {
         val value = bassPositionToValue(level)
-        val json = commandSerializer.serialize(DeviceCommand.SetBassLevel(value))
-        getService()?.sendCommand(json)
+        getService()?.sendCommand(DeviceCommand.SetBassLevel(value))
         Log.d(TAG, "Bass level: ${bassPositionToPercent(level)}% (pos=$level) -> value: $value")
     }
 
@@ -197,7 +194,7 @@ class MainFragment : Fragment() {
 
         changePresetButton.setOnClickListener {
             enterPresetLoadingState()
-            getService()?.sendCommand(commandSerializer.serialize(DeviceCommand.ChangePreset))
+            getService()?.sendCommand(DeviceCommand.ChangePreset)
             presetHandler.postDelayed({
                 requestPresetWithTimeout()
             }, CHANGE_PRESET_DELAY_MS)
@@ -296,7 +293,7 @@ class MainFragment : Fragment() {
 
     /** Отправить GetPreset и установить таймаут. */
     private fun requestPresetWithTimeout() {
-        getService()?.sendCommand(commandSerializer.serialize(DeviceCommand.GetPreset))
+        getService()?.sendCommand(DeviceCommand.GetPreset)
         presetHandler.postDelayed({
             Log.w(TAG, "Таймаут ожидания ответа пресета")
             exitPresetLoadingState(null)

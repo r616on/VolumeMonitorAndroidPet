@@ -4,6 +4,7 @@ import android.content.Context
 import android.view.View
 import android.view.ViewGroup
 import com.example.volumemonitor.core.event.AppEvent
+import com.example.volumemonitor.core.model.DeviceCommand
 import com.example.volumemonitor.core.model.VolumeControlMode
 import com.example.volumemonitor.core.repository.SettingsRepository
 import kotlinx.coroutines.CoroutineDispatcher
@@ -23,10 +24,10 @@ data class ModeState(
     val displayLabel: String
 )
 
-/** Функциональный интерфейс для отправки команд громкости в сериал порт. */
+/** Функциональный интерфейс для отправки команд в serial port. */
 fun interface CommandSender {
-    /** Отправить значение громкости 0..255 на Arduino. */
-    fun sendVolume(targetVolume: Int)
+    /** Отправить команду на Arduino. */
+    fun send(command: DeviceCommand)
 }
 
 /**
