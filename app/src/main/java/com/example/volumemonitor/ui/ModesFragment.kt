@@ -79,6 +79,7 @@ class ModesFragment : Fragment() {
             VolumeControlMode.OBSERVER -> modeRadioGroup.check(R.id.radioObserver)
             VolumeControlMode.BUTTONS -> modeRadioGroup.check(R.id.radioButtons)
             VolumeControlMode.SCREEN -> modeRadioGroup.check(R.id.radioScreen)
+            VolumeControlMode.BUTTON_MATRIX -> modeRadioGroup.check(R.id.radioButtonMatrix)
         }
         updateModeDescription(currentMode)
 
@@ -120,6 +121,7 @@ class ModesFragment : Fragment() {
                 R.id.radioObserver -> VolumeControlMode.OBSERVER
                 R.id.radioButtons -> VolumeControlMode.BUTTONS
                 R.id.radioScreen -> VolumeControlMode.SCREEN
+                R.id.radioButtonMatrix -> VolumeControlMode.BUTTON_MATRIX
                 else -> return@setOnCheckedChangeListener
             }
             Log.d(TAG, "Выбран режим: $selectedMode (текущий: $currentMode)")
@@ -196,6 +198,8 @@ class ModesFragment : Fragment() {
                 "Кнопки: громкость изменяется на ±1 при каждом нажатии назначенной кнопки. Удерживайте кнопку для непрерывного изменения."
             VolumeControlMode.SCREEN ->
                 "Экран: громкость регулируется ползунком на главном экране (15 положений)."
+            VolumeControlMode.BUTTON_MATRIX ->
+                "Матрица: 6 кнопок (1–6). При нажатии отправляется button_down, при отпускании — button_up с номером кнопки. Кнопки можно нажимать с экрана или назначить физические клавиши."
         }
     }
 }

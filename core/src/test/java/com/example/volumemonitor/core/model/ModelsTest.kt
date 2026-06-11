@@ -47,6 +47,9 @@ class ModelsTest {
         val result = when (cmd) {
             is DeviceCommand.SetVolume -> "vol:${cmd.value}"
             is DeviceCommand.SetBassLevel -> "bass:${cmd.value}"
+            is DeviceCommand.SetVolumeMemo -> "memo:${cmd.value}"
+            is DeviceCommand.ButtonDown -> "down:${cmd.value}"
+            is DeviceCommand.ButtonUp -> "up:${cmd.value}"
             DeviceCommand.ChangePreset -> "change"
             DeviceCommand.GetPreset -> "get"
         }
@@ -64,10 +67,11 @@ class ModelsTest {
     @Test
     fun volumeControlMode_enumValues() {
         val modes = VolumeControlMode.values()
-        assertEquals(3, modes.size)
+        assertEquals(4, modes.size)
         assertTrue(modes.contains(VolumeControlMode.OBSERVER))
         assertTrue(modes.contains(VolumeControlMode.BUTTONS))
         assertTrue(modes.contains(VolumeControlMode.SCREEN))
+        assertTrue(modes.contains(VolumeControlMode.BUTTON_MATRIX))
     }
 
     @Test
@@ -168,6 +172,50 @@ class ModelsTest {
     @Test(expected = IllegalArgumentException::class)
     fun deviceCommand_setBassLevel_rejectsOverflow() {
         DeviceCommand.SetBassLevel(256)
+    }
+
+    // ── ButtonDown / ButtonUp ──
+
+    @Test
+    fun deviceCommand_buttonDown_toJson() {
+        val json = DeviceCommand.ButtonDown(3).toJson()
+        assertEquals("""{"command":"button_down","value":3}""", json)
+    }
+
+    @Test
+    fun deviceCommand_buttonUp_toJson() {
+        val json = DeviceCommand.ButtonUp(6).toJson()
+        assertEquals("""{"command":"button_up","value":6}""", json)
+    }
+
+    @Test
+    fun deviceCommand_commandName_buttonDown() {
+        assertEquals("button_down", DeviceCommand.ButtonDown(1).commandName)
+    }
+
+    @Test
+    fun deviceCommand_commandName_buttonUp() {
+        assertEquals("button_up", DeviceCommand.ButtonUp(1).commandName)
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun deviceCommand_buttonDown_rejectsZero() {
+        DeviceCommand.ButtonDown(0)
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun deviceCommand_buttonDown_rejectsSeven() {
+        DeviceCommand.ButtonDown(7)
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun deviceCommand_buttonUp_rejectsZero() {
+        DeviceCommand.ButtonUp(0)
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun deviceCommand_buttonUp_rejectsSeven() {
+        DeviceCommand.ButtonUp(7)
     }
 
     // ── Фреймирование ──

@@ -7,9 +7,11 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.SeekBar
 import android.widget.TextView
@@ -54,6 +56,9 @@ class MainFragment : Fragment() {
     private lateinit var screenVolumeValueTextView: TextView
     private lateinit var screenVolumeMinusButton: Button
     private lateinit var screenVolumePlusButton: Button
+
+    private lateinit var matrixButtonsLayout: LinearLayout
+    private val matrixButtons = mutableListOf<Button>()
 
     private val audioManager: AudioManager by lazy { requireActivity().getSystemService(Context.AUDIO_SERVICE) as AudioManager }
     private val settingsRepository: SettingsRepository by lazy { SettingsRepositoryImpl(requireContext()) }
@@ -123,6 +128,21 @@ class MainFragment : Fragment() {
         screenVolumeValueTextView = view.findViewById(R.id.screenVolumeValueTextView)
         screenVolumeMinusButton = view.findViewById(R.id.screenVolumeMinusButton)
         screenVolumePlusButton = view.findViewById(R.id.screenVolumePlusButton)
+
+        matrixButtonsLayout = view.findViewById(R.id.matrixButtonsLayout)
+        matrixButtons.clear()
+        matrixButtons.addAll(listOf(
+            view.findViewById(R.id.matrixButton1),
+            view.findViewById(R.id.matrixButton2),
+            view.findViewById(R.id.matrixButton3),
+            view.findViewById(R.id.matrixButton4),
+            view.findViewById(R.id.matrixButton5),
+            view.findViewById(R.id.matrixButton6)
+        ))
+        for (i in 1..6) {
+            setupMatrixButtonTouch(matrixButtons[i - 1], i)
+        }
+
         bassMinusButton = view.findViewById(R.id.bassMinusButton)
         bassPlusButton = view.findViewById(R.id.bassPlusButton)
         changePresetButton = view.findViewById(R.id.changePresetButton)
@@ -212,7 +232,9 @@ class MainFragment : Fragment() {
                     is AppEvent.ModeStateChanged -> {
                         volumeTextView.text = "Громкость: ${event.currentVolume} / ${event.maxVolume} (${event.displayLabel})"
                         val isScreenMode = event.modeId == VolumeControlMode.SCREEN
+                        val isMatrixMode = event.modeId == VolumeControlMode.BUTTON_MATRIX
                         screenVolumeLayout.visibility = if (isScreenMode) View.VISIBLE else View.GONE
+                        matrixButtonsLayout.visibility = if (isMatrixMode) View.VISIBLE else View.GONE
                         if (isScreenMode) {
                             if (screenVolumeSeekBar.progress != event.currentVolume) {
                                 screenVolumeSeekBar.progress = event.currentVolume
@@ -342,6 +364,7 @@ class MainFragment : Fragment() {
                 val max = Constants.SCREEN_MAX_POSITION
                 "Громкость: $current / $max (экран)"
             }
+            VolumeControlMode.BUTTON_MATRIX -> "Режим матрицы кнопок"
         }
         volumeTextView.text = text
     }
@@ -363,6 +386,35 @@ class MainFragment : Fragment() {
         } catch (e: JSONException) {
             Log.d(TAG, "Не удалось распарсить JSON: ${e.message}")
             null
+        }
+    }
+
+    // ── Матрица кнопок (touch-обработка) ──
+
+    /** Настраивает обработку нажатий/отпусканий для кнопки матрицы. */
+    private fun setupMatrixButtonTouch(button: Button, buttonNumber: Int) {
+        button.setOnTouchListener { view, event ->
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    view.isPressed = true
+                    Log.d(TAG, "Матрица: кнопка $buttonNumber нажата (экран)")
+                    AppEventBus.tryEmit(AppEvent.MatrixButtonDown(buttonNumber))
+                    true
+                }
+                MotionEvent.ACTION_UP -> {
+                    view.isPressed = false
+                    Log.d(TAG, "Матрица: кнопка $buttonNumber отпущена (экран)")
+                    AppEventBus.tryEmit(AppEvent.MatrixButtonUp(buttonNumber))
+                    true
+                }
+                MotionEvent.ACTION_CANCEL -> {
+                    view.isPressed = false
+                    Log.d(TAG, "Матрица: кнопка $buttonNumber отменена (экран)")
+                    AppEventBus.tryEmit(AppEvent.MatrixButtonUp(buttonNumber))
+                    true
+                }
+                else -> false
+            }
         }
     }
 }

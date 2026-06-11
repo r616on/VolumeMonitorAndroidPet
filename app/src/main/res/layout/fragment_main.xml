@@ -1,10 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#FFFFFF"
-    android:orientation="vertical"
-    android:padding="10dp">
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="10dp">
 
     <TextView
         android:id="@+id/usbStatusTextView"
@@ -200,4 +205,107 @@
 
     </LinearLayout>
 
+    <!-- ── Матрица кнопок (только для BUTTON_MATRIX) ── -->
+    <LinearLayout
+        android:id="@+id/matrixButtonsLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:text="Матрица кнопок"
+            android:textColor="#000000"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <!-- Ряд 1: кнопки 1, 2, 3 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginBottom="4dp"
+            android:gravity="center"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/matrixButton1"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_marginEnd="4dp"
+                android:layout_weight="1"
+                android:text="1"
+                android:textColor="#FFFFFF"
+                android:textSize="20sp"
+                android:backgroundTint="#FF5722" />
+
+            <Button
+                android:id="@+id/matrixButton2"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_marginEnd="4dp"
+                android:layout_weight="1"
+                android:text="2"
+                android:textColor="#FFFFFF"
+                android:textSize="20sp"
+                android:backgroundTint="#FF5722" />
+
+            <Button
+                android:id="@+id/matrixButton3"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:text="3"
+                android:textColor="#FFFFFF"
+                android:textSize="20sp"
+                android:backgroundTint="#FF5722" />
+        </LinearLayout>
+
+        <!-- Ряд 2: кнопки 4, 5, 6 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:gravity="center"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/matrixButton4"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_marginEnd="4dp"
+                android:layout_weight="1"
+                android:text="4"
+                android:textColor="#FFFFFF"
+                android:textSize="20sp"
+                android:backgroundTint="#FF5722" />
+
+            <Button
+                android:id="@+id/matrixButton5"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_marginEnd="4dp"
+                android:layout_weight="1"
+                android:text="5"
+                android:textColor="#FFFFFF"
+                android:textSize="20sp"
+                android:backgroundTint="#FF5722" />
+
+            <Button
+                android:id="@+id/matrixButton6"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:text="6"
+                android:textColor="#FFFFFF"
+                android:textSize="20sp"
+                android:backgroundTint="#FF5722" />
+        </LinearLayout>
+
+    </LinearLayout>
+
 </LinearLayout>
+
+</ScrollView>

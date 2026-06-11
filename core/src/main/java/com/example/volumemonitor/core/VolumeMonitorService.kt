@@ -22,6 +22,7 @@ import com.example.volumemonitor.core.repository.SettingsRepositoryImpl
 import com.example.volumemonitor.core.usb.UsbPortState
 import com.example.volumemonitor.core.usb.UsbSerialPortManager
 import com.example.volumemonitor.core.volume.memo.VolumeMemoManager
+import com.example.volumemonitor.core.volume.mode.ButtonMatrixMode
 import com.example.volumemonitor.core.volume.mode.ButtonsMode
 import com.example.volumemonitor.core.volume.mode.CommandSender
 import com.example.volumemonitor.core.volume.mode.ObserverMode
@@ -165,6 +166,12 @@ class VolumeMonitorService : Service() {
                 appEvents = AppEventBus.events
             )
             VolumeControlMode.SCREEN -> ScreenMode(
+                context = this,
+                commandSender = commandSender,
+                settingsRepository = settingsRepository,
+                appEvents = AppEventBus.events
+            )
+            VolumeControlMode.BUTTON_MATRIX -> ButtonMatrixMode(
                 context = this,
                 commandSender = commandSender,
                 settingsRepository = settingsRepository,

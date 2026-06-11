@@ -39,6 +39,7 @@ class ButtonSettingsFragment : Fragment() {
     private lateinit var learnVolUpButton: Button
     private lateinit var volDownKeyCodesContainer: LinearLayout
     private lateinit var learnVolDownButton: Button
+    private lateinit var matrixButtonsContainer: LinearLayout
     private lateinit var longPressDelayEditText: EditText
     private lateinit var resetAllButton: Button
 
@@ -59,6 +60,7 @@ class ButtonSettingsFragment : Fragment() {
         learnVolUpButton = view.findViewById(R.id.learnVolUpButton)
         volDownKeyCodesContainer = view.findViewById(R.id.volDownKeyCodesContainer)
         learnVolDownButton = view.findViewById(R.id.learnVolDownButton)
+        matrixButtonsContainer = view.findViewById(R.id.matrixButtonsContainer)
         longPressDelayEditText = view.findViewById(R.id.longPressDelayEditText)
         resetAllButton = view.findViewById(R.id.resetAllButton)
 
@@ -84,10 +86,18 @@ class ButtonSettingsFragment : Fragment() {
 
         // ── Сброс всех назначений ──
 
+        // ── Заполнение матрицы кнопок ──
+
+        populateMatrixButtons()
+
         resetAllButton.setOnClickListener {
             settingsRepository.removeAllButtonKeyCodes(ButtonAction.VOLUME_UP)
             settingsRepository.removeAllButtonKeyCodes(ButtonAction.VOLUME_DOWN)
+            for (i in 1..6) {
+                settingsRepository.removeAllMatrixButtonKeyCodes(i)
+            }
             refreshButtonStatuses()
+            populateMatrixButtons()
             notifyServiceSettingsChanged()
             Toast.makeText(requireContext(), "Назначения сброшены", Toast.LENGTH_SHORT).show()
         }
@@ -243,5 +253,133 @@ class ButtonSettingsFragment : Fragment() {
     private fun notifyServiceSettingsChanged() {
         AppEventBus.tryEmit(AppEvent.ButtonSettingsChanged)
         Log.d(TAG, "Событие ButtonSettingsChanged отправлено")
+    }
+
+    // ── Матрица кнопок ──
+
+    /** Динамически наполняет контейнер 6 строками для кнопок матрицы. */
+    private fun populateMatrixButtons() {
+        matrixButtonsContainer.removeAllViews()
+
+        for (buttonNumber in 1..6) {
+            val row = LinearLayout(requireContext()).apply {
+                orientation = LinearLayout.HORIZONTAL
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                )
+                setPadding(0, 4, 0, 4)
+            }
+
+            // Метка «Кнопка N»
+            val label = TextView(requireContext()).apply {
+                text = "Кнопка $buttonNumber"
+                textSize = 14f
+                setTextColor(0xFF333333.toInt())
+                layoutParams = LinearLayout.LayoutParams(
+                    0,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    1f
+                )
+            }
+
+            val keyCodes = settingsRepository.getMatrixButtonKeyCodes(buttonNumber)
+
+            // Список keyCode
+            val keyCodeContainer = LinearLayout(requireContext()).apply {
+                orientation = LinearLayout.VERTICAL
+                layoutParams = LinearLayout.LayoutParams(
+                    0,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    2f
+                )
+            }
+
+            if (keyCodes.isEmpty()) {
+                val emptyView = TextView(requireContext()).apply {
+                    text = "Не назначено"
+                    textSize = 12f
+                    setTextColor(0xFF666666.toInt())
+                }
+                keyCodeContainer.addView(emptyView)
+            } else {
+                for (kc in keyCodes.sorted()) {
+                    val name = keyCodeToReadableName(kc)
+                    val kcLabel = TextView(requireContext()).apply {
+                        text = "$kc ($name)"
+                        textSize = 12f
+                        setTextColor(0xFF333333.toInt())
+                    }
+                    keyCodeContainer.addView(kcLabel)
+                }
+            }
+
+            // Кнопка «Обучить»
+            val learnButton = Button(requireContext()).apply {
+                text = "Обучить"
+                textSize = 12f
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                )
+                setOnClickListener {
+                    showMatrixLearnDialog(buttonNumber)
+                }
+            }
+
+            // Кнопка удаления
+            if (keyCodes.isNotEmpty()) {
+                val deleteButton = ImageButton(requireContext()).apply {
+                    setImageResource(android.R.drawable.ic_delete)
+                    contentDescription = "Сбросить кнопку $buttonNumber"
+                    layoutParams = LinearLayout.LayoutParams(64, 64)
+                    setBackgroundColor(android.graphics.Color.TRANSPARENT)
+                    setOnClickListener {
+                        settingsRepository.removeAllMatrixButtonKeyCodes(buttonNumber)
+                        populateMatrixButtons()
+                        notifyServiceSettingsChanged()
+                        Log.d(TAG, "Сброшены назначения для кнопки $buttonNumber")
+                    }
+                }
+                row.addView(label)
+                row.addView(keyCodeContainer)
+                row.addView(learnButton)
+                row.addView(deleteButton)
+            } else {
+                row.addView(label)
+                row.addView(keyCodeContainer)
+                row.addView(learnButton)
+            }
+
+            matrixButtonsContainer.addView(row)
+        }
+    }
+
+    /** Показать диалог обучения для кнопки матрицы. */
+    private fun showMatrixLearnDialog(buttonNumber: Int) {
+        if (!ButtonPressService.isRunning) {
+            AlertDialog.Builder(requireContext(), R.style.ThemeOverlay_VolumeMonitor_Dialog)
+                .setTitle("Служба специальных возможностей не включена")
+                .setMessage(
+                    "Для обучения и работы кнопок необходимо включить службу " +
+                    "\"Монитор громкости\" в разделе \"Специальные возможности\" " +
+                    "системных настроек.\n\nПерейти к настройкам сейчас?"
+                )
+                .setPositiveButton("Перейти") { _, _ ->
+                    val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+                    startActivity(intent)
+                }
+                .setNegativeButton("Отмена") { dialog, _ -> dialog.dismiss() }
+                .show()
+            return
+        }
+        val dialog = ButtonLearnDialog.newInstance(buttonNumber)
+        dialog.setOnLearnListener { keyCode ->
+            Log.i(TAG, "Кнопка матрицы $buttonNumber выучена: keyCode=$keyCode")
+            settingsRepository.addMatrixButtonKeyCode(buttonNumber, keyCode)
+            populateMatrixButtons()
+            notifyServiceSettingsChanged()
+        }
+        dialog.show(parentFragmentManager, "matrixLearnDialog_$buttonNumber")
     }
 }

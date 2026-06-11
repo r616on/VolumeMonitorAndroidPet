@@ -7,5 +7,7 @@ enum class VolumeControlMode {
     /** Управление через назначенные физические кнопки. */
     BUTTONS,
     /** Управление с экрана — ползунок на главной странице. */
-    SCREEN
+    SCREEN,
+    /** Матрица из 6 кнопок — отправка button_down/button_up с номером кнопки. */
+    BUTTON_MATRIX
 }

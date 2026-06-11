@@ -12,6 +12,7 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
     private val bassPrefs = context.getSharedPreferences(Constants.PREFS_NAME_BASS, Context.MODE_PRIVATE)
     private val generalPrefs = context.getSharedPreferences(Constants.PREFS_NAME_GENERAL, Context.MODE_PRIVATE)
     private val buttonPrefs = context.getSharedPreferences(Constants.PREFS_NAME_BUTTONS, Context.MODE_PRIVATE)
+    private val matrixPrefs = context.getSharedPreferences(Constants.PREFS_NAME_MATRIX, Context.MODE_PRIVATE)
 
     override fun getSavedDevice(): Pair<Int, Int>? {
         val vid = usbPrefs.getInt(Constants.KEY_VENDOR_ID, -1)
@@ -132,6 +133,48 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
 
     override fun saveLongPressDelayMs(delayMs: Long) {
         buttonPrefs.edit().putLong(Constants.KEY_LONG_PRESS_DELAY_MS, delayMs).apply()
+    }
+
+    // ── Матрица кнопок ──
+
+    private fun prefKeyForMatrixButton(buttonNumber: Int): String = when (buttonNumber) {
+        1 -> Constants.KEY_MATRIX_BUTTON_1
+        2 -> Constants.KEY_MATRIX_BUTTON_2
+        3 -> Constants.KEY_MATRIX_BUTTON_3
+        4 -> Constants.KEY_MATRIX_BUTTON_4
+        5 -> Constants.KEY_MATRIX_BUTTON_5
+        6 -> Constants.KEY_MATRIX_BUTTON_6
+        else -> throw IllegalArgumentException("Matrix button must be 1..6, got $buttonNumber")
+    }
+
+    override fun getMatrixButtonKeyCodes(buttonNumber: Int): Set<Int> {
+        val key = prefKeyForMatrixButton(buttonNumber)
+        val stringSet = matrixPrefs.getStringSet(key, null)
+        if (stringSet != null) {
+            return stringSet.mapNotNull { it.toIntOrNull() }.toSet()
+        }
+        return emptySet()
+    }
+
+    override fun addMatrixButtonKeyCode(buttonNumber: Int, keyCode: Int) {
+        val key = prefKeyForMatrixButton(buttonNumber)
+        val current = getMatrixButtonKeyCodes(buttonNumber).toMutableSet()
+        current.add(keyCode)
+        val stringSet = current.map { it.toString() }.toSet()
+        matrixPrefs.edit().putStringSet(key, stringSet).apply()
+    }
+
+    override fun removeMatrixButtonKeyCode(buttonNumber: Int, keyCode: Int) {
+        val key = prefKeyForMatrixButton(buttonNumber)
+        val current = getMatrixButtonKeyCodes(buttonNumber).toMutableSet()
+        current.remove(keyCode)
+        val stringSet = current.map { it.toString() }.toSet()
+        matrixPrefs.edit().putStringSet(key, stringSet).apply()
+    }
+
+    override fun removeAllMatrixButtonKeyCodes(buttonNumber: Int) {
+        val key = prefKeyForMatrixButton(buttonNumber)
+        matrixPrefs.edit().putStringSet(key, emptySet()).apply()
     }
 
     // ── Управление с экрана ──

@@ -56,4 +56,14 @@ sealed class AppEvent {
 
     /** Ползунок громкости на экране сдвинут пользователем. value: 0..maxVolume (по умолчанию 0..14). */
     data class ScreenVolumeChanged(val value: Int) : AppEvent()
+
+    /** Нажатие кнопки матрицы (номер 1..6) — с экрана или физической клавиши. */
+    data class MatrixButtonDown(val buttonNumber: Int) : AppEvent() {
+        init { require(buttonNumber in 1..6) { "Matrix button must be 1..6, got $buttonNumber" } }
+    }
+
+    /** Отпускание кнопки матрицы (номер 1..6) — с экрана или физической клавиши. */
+    data class MatrixButtonUp(val buttonNumber: Int) : AppEvent() {
+        init { require(buttonNumber in 1..6) { "Matrix button must be 1..6, got $buttonNumber" } }
+    }
 }

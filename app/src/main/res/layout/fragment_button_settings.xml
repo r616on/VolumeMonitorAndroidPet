@@ -81,6 +81,30 @@
             android:layout_marginBottom="16dp"
             android:background="#DDDDDD" />
 
+        <!-- ── Матрица кнопок ── -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:text="Матрица кнопок (1–6)"
+            android:textColor="#000000"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:id="@+id/matrixButtonsContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:orientation="vertical" />
+
+        <!-- ── Разделитель ── -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginBottom="16dp"
+            android:background="#DDDDDD" />
+
         <!-- ── Задержка долгого нажатия ── -->
         <TextView
             android:layout_width="wrap_content"

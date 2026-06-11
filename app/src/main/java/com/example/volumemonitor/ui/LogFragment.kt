@@ -88,6 +88,8 @@ class LogFragment : Fragment() {
                     }
                     is AppEvent.ModeStateChanged -> {}      // не логируется
                     is AppEvent.ScreenVolumeChanged -> {}  // не логируется
+                    is AppEvent.MatrixButtonDown -> {}     // не логируется
+                    is AppEvent.MatrixButtonUp -> {}       // не логируется
                 }
             }
         }

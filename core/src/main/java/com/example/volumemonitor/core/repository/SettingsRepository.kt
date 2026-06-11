@@ -36,6 +36,12 @@ interface SettingsRepository {
     fun getScreenCurrentVolume(): Int
     fun saveScreenCurrentVolume(volume: Int)
 
+    // ── Матрица кнопок ──
+    fun getMatrixButtonKeyCodes(buttonNumber: Int): Set<Int>
+    fun addMatrixButtonKeyCode(buttonNumber: Int, keyCode: Int)
+    fun removeMatrixButtonKeyCode(buttonNumber: Int, keyCode: Int)
+    fun removeAllMatrixButtonKeyCodes(buttonNumber: Int)
+
     // ── SetVolumeMemo ──
     fun getLastMemoVolume(): Int
     fun saveLastMemoVolume(volume: Int)

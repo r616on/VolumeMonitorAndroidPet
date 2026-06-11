@@ -32,6 +32,7 @@ class ButtonLearnDialog : DialogFragment() {
     companion object {
         private const val TAG = "ButtonLearnDialog"
         private const val ARG_ACTION = "action"
+        private const val ARG_MATRIX_BUTTON = "matrixButton"
 
         fun newInstance(action: ButtonAction): ButtonLearnDialog {
             return ButtonLearnDialog().apply {
@@ -40,12 +41,26 @@ class ButtonLearnDialog : DialogFragment() {
                 }
             }
         }
+
+        /** Создать диалог для обучения кнопки матрицы (номер 1..6). */
+        fun newInstance(buttonNumber: Int): ButtonLearnDialog {
+            return ButtonLearnDialog().apply {
+                arguments = Bundle().apply {
+                    putInt(ARG_MATRIX_BUTTON, buttonNumber)
+                }
+            }
+        }
     }
 
     private var learnListener: ((Int) -> Unit)? = null
     private lateinit var learnManager: ButtonLearnManager
-    private val action: ButtonAction by lazy {
-        ButtonAction.valueOf(requireArguments().getString(ARG_ACTION)!!)
+    private val action: ButtonAction? by lazy {
+        val name = requireArguments().getString(ARG_ACTION) ?: return@lazy null
+        ButtonAction.valueOf(name)
+    }
+    private val matrixButtonNumber: Int? by lazy {
+        val num = requireArguments().getInt(ARG_MATRIX_BUTTON, -1)
+        if (num in 1..6) num else null
     }
 
     private lateinit var instructionTextView: TextView

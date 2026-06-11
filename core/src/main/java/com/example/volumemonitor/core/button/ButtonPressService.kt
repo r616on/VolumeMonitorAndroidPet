@@ -49,6 +49,10 @@ class ButtonPressService : AccessibilityService() {
     private var volumeDownKeyCodes: Set<Int> = emptySet()
     private var longPressDelayMs: Long = Constants.DEFAULT_LONG_PRESS_DELAY_MS
 
+    // ── Матрица кнопок ──
+    /** keyCode → номер кнопки (1..6). */
+    private var matrixKeyCodeToButton: Map<Int, Int> = emptyMap()
+
     // ── Отслеживание долгого нажатия ──
     private var activeKeyCode: Int? = null
     private var pressStartTime: Long = 0L
@@ -154,8 +158,31 @@ class ButtonPressService : AccessibilityService() {
 
         // Обычный режим — обработка назначенных кнопок
         when (event.action) {
-            KeyEvent.ACTION_DOWN -> handleKeyDown(event.keyCode, event.repeatCount)
-            KeyEvent.ACTION_UP -> handleKeyUp(event.keyCode)
+            KeyEvent.ACTION_DOWN -> {
+                // Проверяем кнопки матрицы
+                val matrixButton = matrixKeyCodeToButton[event.keyCode]
+                if (matrixButton != null) {
+                    // Сброс long-press состояния — этот keyCode мог ранее использоваться для Vol+/Vol-
+                    if (event.keyCode == activeKeyCode) {
+                        activeKeyCode = null
+                        isLongPressActive = false
+                        repeatRunnable?.let { repeatHandler.removeCallbacks(it) }
+                        repeatRunnable = null
+                    }
+                    handleMatrixKeyDown(event.keyCode, matrixButton, event.repeatCount)
+                    return false
+                }
+                handleKeyDown(event.keyCode, event.repeatCount)
+            }
+            KeyEvent.ACTION_UP -> {
+                // Проверяем кнопки матрицы
+                val matrixButton = matrixKeyCodeToButton[event.keyCode]
+                if (matrixButton != null) {
+                    handleMatrixKeyUp(event.keyCode, matrixButton)
+                    return false
+                }
+                handleKeyUp(event.keyCode)
+            }
         }
         // ВАЖНО: возвращаем false, чтобы не блокировать системную обработку кнопок
         return false
@@ -229,6 +256,38 @@ class ButtonPressService : AccessibilityService() {
         volumeUpKeyCodes = settingsRepository.getButtonKeyCodes(ButtonAction.VOLUME_UP)
         volumeDownKeyCodes = settingsRepository.getButtonKeyCodes(ButtonAction.VOLUME_DOWN)
         longPressDelayMs = settingsRepository.getLongPressDelayMs()
-        Log.d(TAG, "Настройки загружены: volUp=$volumeUpKeyCodes, volDown=$volumeDownKeyCodes, longPressDelay=$longPressDelayMs")
+
+        // Загружаем keyCode для матрицы кнопок
+        val map = mutableMapOf<Int, Int>()
+        for (buttonNumber in 1..Constants.MATRIX_BUTTON_COUNT) {
+            val keyCodes = settingsRepository.getMatrixButtonKeyCodes(buttonNumber)
+            for (kc in keyCodes) {
+                map[kc] = buttonNumber
+            }
+        }
+        matrixKeyCodeToButton = map
+
+        // Предупреждение о пересечении keyCode между матрицей и Vol+/Vol-
+        val intersection = matrixKeyCodeToButton.keys.intersect(volumeUpKeyCodes + volumeDownKeyCodes)
+        if (intersection.isNotEmpty()) {
+            Log.w(TAG, "Обнаружено пересечение keyCode матрицы и Vol+/Vol-: $intersection")
+        }
+
+        Log.d(TAG, "Настройки загружены: volUp=$volumeUpKeyCodes, volDown=$volumeDownKeyCodes, longPressDelay=$longPressDelayMs, matrix=$matrixKeyCodeToButton")
+    }
+
+    // ── Обработка кнопок матрицы ──
+
+    /** Нажатие физической кнопки, привязанной к матрице. */
+    private fun handleMatrixKeyDown(keyCode: Int, buttonNumber: Int, repeatCount: Int) {
+        if (repeatCount > 0) return // игнорируем автоповтор
+        Log.d(TAG, "Матрица: кнопка $buttonNumber нажата (keyCode=$keyCode)")
+        AppEventBus.tryEmit(AppEvent.MatrixButtonDown(buttonNumber))
+    }
+
+    /** Отпускание физической кнопки, привязанной к матрице. */
+    private fun handleMatrixKeyUp(keyCode: Int, buttonNumber: Int) {
+        Log.d(TAG, "Матрица: кнопка $buttonNumber отпущена (keyCode=$keyCode)")
+        AppEventBus.tryEmit(AppEvent.MatrixButtonUp(buttonNumber))
     }
 }

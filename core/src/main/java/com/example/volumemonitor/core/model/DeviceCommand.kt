@@ -50,6 +50,20 @@ sealed class DeviceCommand {
         override fun toJson() = """{"command":"$commandName"}"""
     }
 
+    /** Нажатие кнопки матрицы (1..6). */
+    data class ButtonDown(val value: Int) : DeviceCommand() {
+        override val commandName = "button_down"
+        init { require(value in 1..6) { "Matrix button must be 1..6, got $value" } }
+        override fun toJson() = """{"command":"$commandName","value":$value}"""
+    }
+
+    /** Отпускание кнопки матрицы (1..6). */
+    data class ButtonUp(val value: Int) : DeviceCommand() {
+        override val commandName = "button_up"
+        init { require(value in 1..6) { "Matrix button must be 1..6, got $value" } }
+        override fun toJson() = """{"command":"$commandName","value":$value}"""
+    }
+
     // ── Фреймирование ────────────────────────────────────────
 
     companion object {

@@ -46,4 +46,14 @@ object Constants {
     const val DEFAULT_LONG_PRESS_DELAY_MS = 500L
     const val DEFAULT_BUTTON_LEARN_TIMEOUT_MS = 2000L
     const val LONG_PRESS_REPEAT_INTERVAL_MS = 200L
+
+    // ── Матрица кнопок ──
+    const val PREFS_NAME_MATRIX = "MatrixButtonPrefs"
+    const val KEY_MATRIX_BUTTON_1 = "matrix_button_1"
+    const val KEY_MATRIX_BUTTON_2 = "matrix_button_2"
+    const val KEY_MATRIX_BUTTON_3 = "matrix_button_3"
+    const val KEY_MATRIX_BUTTON_4 = "matrix_button_4"
+    const val KEY_MATRIX_BUTTON_5 = "matrix_button_5"
+    const val KEY_MATRIX_BUTTON_6 = "matrix_button_6"
+    const val MATRIX_BUTTON_COUNT = 6
 }
