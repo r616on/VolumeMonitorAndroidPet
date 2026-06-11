@@ -176,16 +176,17 @@
 
         <Button
             android:id="@+id/changePresetButton"
-            android:layout_width="140dp"
+            android:layout_width="120dp"
             android:layout_height="match_parent"
             android:layout_marginEnd="10dp"
+            android:textSize="11sp"
             android:text="Сменить пресет" />
 
         <Button
             android:id="@+id/requestPresetButton"
-            android:layout_width="140dp"
+            android:layout_width="120dp"
             android:layout_height="match_parent"
-            android:layout_marginEnd="10dp"
+            android:textSize="11sp"
             android:text="Запросить пресет" />
 
 
