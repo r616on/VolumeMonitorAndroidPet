@@ -95,12 +95,11 @@ class MainFragment : Fragment() {
         bassValueTextView.text = "${bassPositionToPercent(level)}%"
     }
 
-    private fun screenPositionToPercent(position: Int, max: Int): Int =
-        if (max > 0) (position * 100f / max.toFloat()).roundToInt() else 0
+    private fun screenPositionToPercent(position: Int): Int =
+        (position * 100f / Constants.SCREEN_MAX_POSITION.toFloat()).roundToInt()
 
     private fun updateScreenText(position: Int) {
-        val max = screenVolumeSeekBar.max
-        screenVolumeValueTextView.text = "${screenPositionToPercent(position, max)}%"
+        screenVolumeValueTextView.text = "${screenPositionToPercent(position)}%"
     }
 
     private fun sendBassCommand(level: Int) {
@@ -207,7 +206,7 @@ class MainFragment : Fragment() {
         }
 
         screenVolumePlusButton.setOnClickListener {
-            val newVal = (screenVolumeSeekBar.progress + 1).coerceAtMost(screenVolumeSeekBar.max)
+            val newVal = (screenVolumeSeekBar.progress + 1).coerceAtMost(Constants.SCREEN_MAX_POSITION)
             screenVolumeSeekBar.progress = newVal
             updateScreenText(newVal)
             AppEventBus.tryEmit(AppEvent.ScreenVolumeChanged(newVal))
@@ -230,16 +229,9 @@ class MainFragment : Fragment() {
                         volumeTextView.text = "Громкость: ${event.currentVolume} / ${event.maxVolume} (${event.displayLabel})"
                         val isScreenMode = event.modeId == VolumeControlMode.SCREEN
                         val isMatrixMode = event.modeId == VolumeControlMode.BUTTON_MATRIX
-                        val isTeyesMode = event.modeId == VolumeControlMode.TEYES
-                        val showScreenControls = isScreenMode || isTeyesMode
-                        screenVolumeLayout.visibility = if (showScreenControls) View.VISIBLE else View.GONE
+                        screenVolumeLayout.visibility = if (isScreenMode) View.VISIBLE else View.GONE
                         matrixButtonsLayout.visibility = if (isMatrixMode) View.VISIBLE else View.GONE
-                        if (showScreenControls) {
-                            // Для Teyes используем его maxVolume, для Screen — SCREEN_MAX_POSITION
-                            val max = if (isTeyesMode) event.maxVolume else Constants.SCREEN_MAX_POSITION
-                            if (screenVolumeSeekBar.max != max) {
-                                screenVolumeSeekBar.max = max
-                            }
+                        if (isScreenMode) {
                             if (screenVolumeSeekBar.progress != event.currentVolume) {
                                 screenVolumeSeekBar.progress = event.currentVolume
                                 updateScreenText(event.currentVolume)
@@ -385,20 +377,6 @@ class MainFragment : Fragment() {
                 "Громкость: $current / $max (экран)"
             }
             VolumeControlMode.BUTTON_MATRIX -> "Режим матрицы кнопок"
-            VolumeControlMode.TEYES -> {
-                val current = settingsRepository.getTeyesCurrentVolume()
-                val max = settingsRepository.getTeyesMaxVolume()
-                if (::screenVolumeSeekBar.isInitialized) {
-                    if (screenVolumeSeekBar.max != max) {
-                        screenVolumeSeekBar.max = max
-                    }
-                    if (screenVolumeSeekBar.progress != current) {
-                        screenVolumeSeekBar.progress = current
-                        updateScreenText(current)
-                    }
-                }
-                "Громкость: $current / $max (teyes)"
-            }
         }
         volumeTextView.text = text
     }

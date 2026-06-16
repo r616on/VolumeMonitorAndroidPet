@@ -13,7 +13,6 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
     private val generalPrefs = context.getSharedPreferences(Constants.PREFS_NAME_GENERAL, Context.MODE_PRIVATE)
     private val buttonPrefs = context.getSharedPreferences(Constants.PREFS_NAME_BUTTONS, Context.MODE_PRIVATE)
     private val matrixPrefs = context.getSharedPreferences(Constants.PREFS_NAME_MATRIX, Context.MODE_PRIVATE)
-    private val teyesPrefs = context.getSharedPreferences(Constants.PREFS_NAME_TEYES, Context.MODE_PRIVATE)
 
     override fun getSavedDevice(): Pair<Int, Int>? {
         val vid = usbPrefs.getInt(Constants.KEY_VENDOR_ID, -1)
@@ -186,22 +185,6 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
 
     override fun saveScreenCurrentVolume(volume: Int) {
         generalPrefs.edit().putInt(Constants.KEY_SCREEN_CURRENT_VOLUME, volume).apply()
-    }
-
-    // ── Teyes ──
-
-    override fun getTeyesMaxVolume(): Int =
-        teyesPrefs.getInt(Constants.KEY_TEYES_MAX_VOLUME, Constants.DEFAULT_TEYES_MAX_VOLUME)
-
-    override fun saveTeyesMaxVolume(value: Int) {
-        teyesPrefs.edit().putInt(Constants.KEY_TEYES_MAX_VOLUME, value).apply()
-    }
-
-    override fun getTeyesCurrentVolume(): Int =
-        teyesPrefs.getInt(Constants.KEY_TEYES_CURRENT_VOLUME, 0)
-
-    override fun saveTeyesCurrentVolume(volume: Int) {
-        teyesPrefs.edit().putInt(Constants.KEY_TEYES_CURRENT_VOLUME, volume).apply()
     }
 
     // ── SetVolumeMemo ──

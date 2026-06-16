@@ -121,44 +121,6 @@
             android:textColor="#000000"
             android:textSize="16sp" />
 
-        <RadioButton
-            android:id="@+id/radioTeyes"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:padding="8dp"
-            android:text="Teyes (перехват громкости)"
-            android:textColor="#000000"
-            android:textSize="16sp" />
-
-        <!-- Настройки максимальной громкости (только для TEYES) -->
-        <LinearLayout
-            android:id="@+id/teyesMaxVolumeSettingsLayout"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="32dp"
-            android:layout_marginBottom="12dp"
-            android:orientation="vertical"
-            android:visibility="gone">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="4dp"
-                android:text="Максимальная громкость Teyes (1–100)"
-                android:textColor="#000000"
-                android:textSize="14sp" />
-
-            <EditText
-                android:id="@+id/teyesMaxVolumeEditText"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="number"
-                android:hint="36 (по умолчанию, 1-100)"
-                android:textColor="#000000"
-                android:textSize="16sp" />
-
-        </LinearLayout>
-
         <!-- Настройки максимальной громкости (только для BUTTONS) -->
         <LinearLayout
             android:id="@+id/buttonMaxVolumeSettingsLayout"

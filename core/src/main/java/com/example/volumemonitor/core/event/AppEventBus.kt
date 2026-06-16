@@ -69,11 +69,4 @@ sealed class AppEvent {
 
     /** Нажатие кнопки «Пресет +» (физической или экранной). */
     object PresetNextPressed : AppEvent()
-
-    /** Настройки Teyes изменены — сервису нужно обновить параметры. */
-    object TeyesSettingsChanged : AppEvent()
-
-    /** Прочитано значение громкости Teyes из SystemUI (vol_text).
-     *  @param volume значение громкости Teyes (обычно 1..36). */
-    data class TeyesVolumeRead(val volume: Int) : AppEvent()
 }

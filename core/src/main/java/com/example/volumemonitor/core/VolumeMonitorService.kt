@@ -27,7 +27,6 @@ import com.example.volumemonitor.core.volume.mode.ButtonsMode
 import com.example.volumemonitor.core.volume.mode.CommandSender
 import com.example.volumemonitor.core.volume.mode.ObserverMode
 import com.example.volumemonitor.core.volume.mode.ScreenMode
-import com.example.volumemonitor.core.volume.mode.TeyesMode
 import com.example.volumemonitor.core.volume.mode.VolumeMode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -142,10 +141,6 @@ class VolumeMonitorService : Service() {
     }
 
     fun sendCommand(command: DeviceCommand) {
-        if (!::portManager.isInitialized) {
-            Log.w(TAG, "sendCommand: portManager не инициализирован, пропускаем $command")
-            return
-        }
         val json = command.toJson()
         val framed = DeviceCommand.frame(json)
         portManager.send(framed)
@@ -177,12 +172,6 @@ class VolumeMonitorService : Service() {
                 appEvents = AppEventBus.events
             )
             VolumeControlMode.BUTTON_MATRIX -> ButtonMatrixMode(
-                context = this,
-                commandSender = commandSender,
-                settingsRepository = settingsRepository,
-                appEvents = AppEventBus.events
-            )
-            VolumeControlMode.TEYES -> TeyesMode(
                 context = this,
                 commandSender = commandSender,
                 settingsRepository = settingsRepository,

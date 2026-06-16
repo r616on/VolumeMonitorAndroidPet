@@ -48,13 +48,6 @@ object Constants {
     const val DEFAULT_BUTTON_LEARN_TIMEOUT_MS = 2000L
     const val LONG_PRESS_REPEAT_INTERVAL_MS = 200L
 
-    // ── Teyes ──
-    const val PREFS_NAME_TEYES = "TeyesPrefs"
-    const val KEY_TEYES_MAX_VOLUME = "teyes_max_volume"
-    const val KEY_TEYES_CURRENT_VOLUME = "teyes_current_volume"
-    const val DEFAULT_TEYES_MAX_VOLUME = 36
-    const val TEYES_MAX_VOLUME_LIMIT = 100
-
     // ── Матрица кнопок ──
     const val PREFS_NAME_MATRIX = "MatrixButtonPrefs"
     const val KEY_MATRIX_BUTTON_1 = "matrix_button_1"

@@ -39,9 +39,6 @@ class ButtonPressService : AccessibilityService() {
         @Volatile
         var isRunning: Boolean = false
             private set
-
-        /** Минимальный интервал между вызовами [findAccessibilityNodeInfosByViewId] для Teyes (мс). */
-        private const val TEYES_READ_THROTTLE_MS = 200L
     }
 
     private val serviceScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
@@ -109,38 +106,7 @@ class ButtonPressService : AccessibilityService() {
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-        if (event == null) return
-
-        val source = event.source ?: return
-        try {
-            // ── Чтение громкости Teyes из SystemUI ──
-            // Teyes SystemUI показывает громкость в TextView с id=vol_text
-            // (view ID: com.android.systemui:id/vol_text)
-
-            if (event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) {
-                // Фильтрация: реагируем только на изменение текста, игнорируем
-                // структурные изменения (CONTENT_CHANGE_TYPE_SUBTREE и др.) —
-                // это предотвращает вызов findAccessibilityNodeInfosByViewId
-                // при КАЖДОМ изменении контента SystemUI (время, иконки и т.д.)
-                val changeTypes = event.contentChangeTypes
-                if (changeTypes and AccessibilityEvent.CONTENT_CHANGE_TYPE_TEXT == 0) return
-
-                val packageName = event.packageName?.toString() ?: ""
-                if (packageName != "com.android.systemui") return
-
-                tryReadTeyesVolume(source)
-                return
-            }
-
-            if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
-                val packageName = event.packageName?.toString() ?: ""
-                if (packageName != "com.android.systemui") return
-
-                tryReadTeyesVolume(source)
-            }
-        } finally {
-            source.recycle()
-        }
+        // Не используется — нам нужны только KeyEvent
     }
 
     override fun onInterrupt() {
@@ -196,14 +162,19 @@ class ButtonPressService : AccessibilityService() {
             KeyEvent.ACTION_DOWN -> {
                 // Проверяем кнопку «Пресет +»
                 if (event.keyCode in presetNextKeyCodes) {
-                    cancelLongPress()
                     handlePresetNextKeyDown(event.keyCode, event.repeatCount)
                     return false
                 }
                 // Проверяем кнопки матрицы
                 val matrixButton = matrixKeyCodeToButton[event.keyCode]
                 if (matrixButton != null) {
-                    cancelLongPress()
+                    // Сброс long-press состояния — этот keyCode мог ранее использоваться для Vol+/Vol-
+                    if (event.keyCode == activeKeyCode) {
+                        activeKeyCode = null
+                        isLongPressActive = false
+                        repeatRunnable?.let { repeatHandler.removeCallbacks(it) }
+                        repeatRunnable = null
+                    }
                     handleMatrixKeyDown(event.keyCode, matrixButton, event.repeatCount)
                     return false
                 }
@@ -312,15 +283,6 @@ class ButtonPressService : AccessibilityService() {
         Log.d(TAG, "Настройки загружены: volUp=$volumeUpKeyCodes, volDown=$volumeDownKeyCodes, presetNext=$presetNextKeyCodes, longPressDelay=$longPressDelayMs, matrix=$matrixKeyCodeToButton")
     }
 
-    // ── Отмена long-press (вызывается при переключении на матрицу/пресет) ──
-
-    private fun cancelLongPress() {
-        activeKeyCode = null
-        isLongPressActive = false
-        repeatRunnable?.let { repeatHandler.removeCallbacks(it) }
-        repeatRunnable = null
-    }
-
     // ── Обработка кнопок матрицы ──
 
     /** Нажатие физической кнопки, привязанной к матрице. */
@@ -342,81 +304,5 @@ class ButtonPressService : AccessibilityService() {
         if (repeatCount > 0) return // игнорируем автоповтор
         Log.d(TAG, "Пресет +: нажатие (keyCode=$keyCode)")
         AppEventBus.tryEmit(AppEvent.PresetNextPressed)
-    }
-
-    // ── Чтение громкости Teyes из SystemUI (Accessibility) ──
-
-    /** Системный идентификатор волюм-текста Teyes SystemUI: com.android.systemui:id/vol_text. */
-    private val teyesVolumeViewId: String = "com.android.systemui:id/vol_text"
-
-    /** Последнее прочитанное значение громкости Teyes (для избежания дублирования). */
-    private var lastReadTeyesVolume: Int = -1
-
-    /** Время последнего вызова [tryReadTeyesVolume] (мс) — для throttle. */
-    private var lastTeyesReadTime: Long = 0L
-
-    /**
-     * Throttled-обёртка над [readTeyesVolumeInternal].
-     *
-     * Быстрый путь: если source-узел сам является vol_text — читаем напрямую
-     * (без throttle, без обхода дерева). Медленный путь — полный обход
-     * через [android.view.accessibility.AccessibilityNodeInfo.findAccessibilityNodeInfosByViewId] —
-     * выполняется не чаще [TEYES_READ_THROTTLE_MS].
-     */
-    private fun tryReadTeyesVolume(source: android.view.accessibility.AccessibilityNodeInfo?) {
-        if (source == null) return
-
-        // Быстрый путь: source-узел сам является vol_text (не нужен обход дерева)
-        if (source.viewIdResourceName == teyesVolumeViewId) {
-            tryReadVolumeFromNode(source)
-            return
-        }
-
-        // Медленный путь: полный обход дерева с throttle
-        val now = System.currentTimeMillis()
-        if (now - lastTeyesReadTime < TEYES_READ_THROTTLE_MS) return
-        lastTeyesReadTime = now
-        readTeyesVolumeInternal(source)
-    }
-
-    /**
-     * Пытается прочитать текущую громкость Teyes из SystemUI через AccessibilityNodeInfo.
-     *
-     * Ищет TextView с id=vol_text в дереве accessibility-узлов пакета SystemUI.
-     * При успешном чтении эмитит [AppEvent.TeyesVolumeRead] с найденным значением.
-     */
-    private fun readTeyesVolumeInternal(source: android.view.accessibility.AccessibilityNodeInfo) {
-        try {
-            val volNodes = source.findAccessibilityNodeInfosByViewId(teyesVolumeViewId)
-            if (volNodes.isNullOrEmpty()) return
-
-            for (node in volNodes) {
-                try {
-                    if (tryReadVolumeFromNode(node)) break // читаем только первый подходящий узел
-                } finally {
-                    node.recycle()
-                }
-            }
-        } catch (e: Exception) {
-            Log.w(TAG, "Ошибка при чтении громкости Teyes через Accessibility: ${e.message}")
-        }
-    }
-
-    /** Читает текст из конкретного accessibility-узла и эмитит событие.
-     *  @return true если громкость успешно прочитана, false если текст пустой или не parsable. */
-    private fun tryReadVolumeFromNode(node: android.view.accessibility.AccessibilityNodeInfo): Boolean {
-        val text = node.text?.toString() ?: ""
-        if (text.isEmpty()) return false
-
-        val volume = text.toIntOrNull()
-        if (volume != null && volume in 1..100) {
-            if (volume != lastReadTeyesVolume) {
-                lastReadTeyesVolume = volume
-                Log.d(TAG, "Прочитана громкость Teyes из SystemUI (vol_text): $volume")
-                AppEventBus.tryEmit(AppEvent.TeyesVolumeRead(volume))
-            }
-            return true
-        }
-        return false
     }
 }
