@@ -37,8 +37,12 @@ class NotificationController(
         val pi = contentIntent ?: run {
             val launchIntent = context.packageManager.getLaunchIntentForPackage(context.packageName)
             if (launchIntent != null) {
-                PendingIntent.getActivity(context, 0, launchIntent,
-                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+                val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                } else {
+                    PendingIntent.FLAG_UPDATE_CURRENT
+                }
+                PendingIntent.getActivity(context, 0, launchIntent, flags)
             } else null
         }
         pi?.let { builder.setContentIntent(it) }
