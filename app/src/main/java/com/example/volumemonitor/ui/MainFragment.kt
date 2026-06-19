@@ -379,6 +379,10 @@ class MainFragment : Fragment() {
             VolumeControlMode.BUTTON_MATRIX -> "Режим матрицы кнопок"
         }
         volumeTextView.text = text
+
+        // Синхронизация видимости элементов UI в соответствии с текущим режимом
+        screenVolumeLayout.visibility = if (mode == VolumeControlMode.SCREEN) View.VISIBLE else View.GONE
+        matrixButtonsLayout.visibility = if (mode == VolumeControlMode.BUTTON_MATRIX) View.VISIBLE else View.GONE
     }
 
     /** Парсит ответ Arduino и возвращает номер пресета, либо null. */
