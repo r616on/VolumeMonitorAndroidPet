@@ -43,12 +43,13 @@ class ModesFragment : Fragment() {
     private lateinit var observerMaxVolumeEditText: EditText
     private lateinit var buttonMaxVolumeSettingsLayout: View
     private lateinit var buttonMaxVolumeEditText: EditText
-    private lateinit var remAutoRadioButton: RadioButton
+    private lateinit var remAutoCheckBox: CheckBox
     private var currentMode: VolumeControlMode = VolumeControlMode.OBSERVER
     private var pendingMode: VolumeControlMode? = null
     private var currentMaxSource: MaxVolumeSource = MaxVolumeSource.SYSTEM
     private var savedCustomMaxValue: Int = 0
     private var savedButtonMaxValue: Int = 15
+    private var savedRemAutoMode: Boolean = false
     private val settingsRepository: SettingsRepository by lazy {
         SettingsRepositoryImpl(requireContext())
     }
@@ -73,7 +74,7 @@ class ModesFragment : Fragment() {
         observerMaxVolumeEditText = view.findViewById(R.id.observerMaxVolumeEditText)
         buttonMaxVolumeSettingsLayout = view.findViewById(R.id.buttonMaxVolumeSettingsLayout)
         buttonMaxVolumeEditText = view.findViewById(R.id.buttonMaxVolumeEditText)
-        remAutoRadioButton = view.findViewById(R.id.radioRemAuto)
+        remAutoCheckBox = view.findViewById(R.id.checkRemAuto)
 
         // Восстанавливаем текущий режим
         currentMode = settingsRepository.getVolumeControlMode()
@@ -103,8 +104,9 @@ class ModesFragment : Fragment() {
         savedButtonMaxValue = settingsRepository.getMaxVolumeValue()
         buttonMaxVolumeEditText.setText(savedButtonMaxValue.toString())
 
-        // Восстанавливаем настройку REM (без слушателя, чтобы избежать сайд-эффекта)
-        remAutoRadioButton.isChecked = settingsRepository.getRemAutoMode()
+        // Восстанавливаем настройку REM
+        savedRemAutoMode = settingsRepository.getRemAutoMode()
+        remAutoCheckBox.isChecked = savedRemAutoMode
 
         useSystemMaxCheckBox.setOnCheckedChangeListener { _, isChecked ->
             currentMaxSource = if (isChecked) MaxVolumeSource.SYSTEM else MaxVolumeSource.CUSTOM
@@ -117,6 +119,11 @@ class ModesFragment : Fragment() {
         }
 
         buttonMaxVolumeEditText.addTextChangedListener {
+            updateApplyButtonState()
+        }
+
+        // Изменение чекбокса REM — только активирует кнопку «Применить»
+        remAutoCheckBox.setOnCheckedChangeListener { _, _ ->
             updateApplyButtonState()
         }
 
@@ -136,13 +143,6 @@ class ModesFragment : Fragment() {
             buttonMaxVolumeSettingsLayout.visibility = if (selectedMode == VolumeControlMode.BUTTONS) View.VISIBLE else View.GONE
             updateModeDescription(selectedMode)
             updateApplyButtonState()
-        }
-
-        // Слушатель устанавливаем после инициализации начального состояния
-        remAutoRadioButton.setOnCheckedChangeListener { _, isChecked ->
-            settingsRepository.saveRemAutoMode(isChecked)
-            AppEventBus.tryEmit(AppEvent.RemSettingsChanged)
-            Log.d(TAG, "REM авто-режим: $isChecked")
         }
 
         applyButton.setOnClickListener {
@@ -188,6 +188,13 @@ class ModesFragment : Fragment() {
             }
             AppEventBus.tryEmit(AppEvent.ButtonSettingsChanged)
 
+            // Сохраняем настройку REM
+            val remEnabled = remAutoCheckBox.isChecked
+            settingsRepository.saveRemAutoMode(remEnabled)
+            savedRemAutoMode = remEnabled
+            AppEventBus.tryEmit(AppEvent.RemSettingsChanged)
+            Log.d(TAG, "REM авто-режим применён: $remEnabled")
+
             updateApplyButtonState()
             Toast.makeText(requireContext(), "Настройки применены", Toast.LENGTH_SHORT).show()
         }
@@ -200,7 +207,8 @@ class ModesFragment : Fragment() {
         val valueChanged = currentMaxSource == MaxVolumeSource.CUSTOM && editTextValue != savedCustomMaxValue
         val btnMaxValue = buttonMaxVolumeEditText.text.toString().toIntOrNull() ?: 0
         val buttonMaxChanged = btnMaxValue > 0 && btnMaxValue != savedButtonMaxValue
-        applyButton.isEnabled = modeChanged || sourceChanged || valueChanged || buttonMaxChanged
+        val remChanged = remAutoCheckBox.isChecked != savedRemAutoMode
+        applyButton.isEnabled = modeChanged || sourceChanged || valueChanged || buttonMaxChanged || remChanged
     }
 
     private fun updateModeDescription(mode: VolumeControlMode) {

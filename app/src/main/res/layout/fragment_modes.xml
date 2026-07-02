@@ -181,8 +181,8 @@
         android:textColor="#666666"
         android:textSize="14sp" />
 
-    <RadioButton
-        android:id="@+id/radioRemAuto"
+    <CheckBox
+        android:id="@+id/checkRemAuto"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"

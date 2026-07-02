@@ -57,6 +57,9 @@ class RemManager(
     fun start() {
         Log.d(TAG, "Запуск RemManager")
 
+        // Сразу отправляем enable при старте
+        sendRemCommand(true)
+
         // Регистрируем приёмник экрана
         val filter = IntentFilter().apply {
             addAction(Intent.ACTION_SCREEN_ON)
