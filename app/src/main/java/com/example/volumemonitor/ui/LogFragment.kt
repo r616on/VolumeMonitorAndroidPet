@@ -86,6 +86,9 @@ class LogFragment : Fragment() {
                     AppEvent.ObserverSettingsChanged -> {
                         addEvent("Настройки максимальной громкости OBSERVER изменены")
                     }
+                    AppEvent.RemSettingsChanged -> {
+                        addEvent("Настройки автоматического управления REM изменены")
+                    }
                     is AppEvent.ModeStateChanged -> {}      // не логируется
                     is AppEvent.ScreenVolumeChanged -> {}  // не логируется
                     is AppEvent.MatrixButtonDown -> {}     // не логируется

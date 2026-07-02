@@ -195,4 +195,13 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
     override fun saveLastMemoVolume(volume: Int) {
         generalPrefs.edit().putInt(Constants.KEY_LAST_MEMO_VOLUME, volume).apply()
     }
+
+    // ── REM ──
+
+    override fun getRemAutoMode(): Boolean =
+        generalPrefs.getBoolean(Constants.KEY_REM_AUTO_MODE, Constants.DEFAULT_REM_AUTO_MODE)
+
+    override fun saveRemAutoMode(enabled: Boolean) {
+        generalPrefs.edit().putBoolean(Constants.KEY_REM_AUTO_MODE, enabled).apply()
+    }
 }

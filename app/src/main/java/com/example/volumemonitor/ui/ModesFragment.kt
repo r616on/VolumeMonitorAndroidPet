@@ -10,6 +10,7 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
+import android.widget.RadioButton
 import android.widget.RadioGroup
 import android.widget.TextView
 import android.widget.Toast
@@ -42,6 +43,7 @@ class ModesFragment : Fragment() {
     private lateinit var observerMaxVolumeEditText: EditText
     private lateinit var buttonMaxVolumeSettingsLayout: View
     private lateinit var buttonMaxVolumeEditText: EditText
+    private lateinit var remAutoRadioButton: RadioButton
     private var currentMode: VolumeControlMode = VolumeControlMode.OBSERVER
     private var pendingMode: VolumeControlMode? = null
     private var currentMaxSource: MaxVolumeSource = MaxVolumeSource.SYSTEM
@@ -71,6 +73,7 @@ class ModesFragment : Fragment() {
         observerMaxVolumeEditText = view.findViewById(R.id.observerMaxVolumeEditText)
         buttonMaxVolumeSettingsLayout = view.findViewById(R.id.buttonMaxVolumeSettingsLayout)
         buttonMaxVolumeEditText = view.findViewById(R.id.buttonMaxVolumeEditText)
+        remAutoRadioButton = view.findViewById(R.id.radioRemAuto)
 
         // Восстанавливаем текущий режим
         currentMode = settingsRepository.getVolumeControlMode()
@@ -99,6 +102,9 @@ class ModesFragment : Fragment() {
         // Восстанавливаем настройки макс. громкости BUTTONS
         savedButtonMaxValue = settingsRepository.getMaxVolumeValue()
         buttonMaxVolumeEditText.setText(savedButtonMaxValue.toString())
+
+        // Восстанавливаем настройку REM (без слушателя, чтобы избежать сайд-эффекта)
+        remAutoRadioButton.isChecked = settingsRepository.getRemAutoMode()
 
         useSystemMaxCheckBox.setOnCheckedChangeListener { _, isChecked ->
             currentMaxSource = if (isChecked) MaxVolumeSource.SYSTEM else MaxVolumeSource.CUSTOM
@@ -130,6 +136,13 @@ class ModesFragment : Fragment() {
             buttonMaxVolumeSettingsLayout.visibility = if (selectedMode == VolumeControlMode.BUTTONS) View.VISIBLE else View.GONE
             updateModeDescription(selectedMode)
             updateApplyButtonState()
+        }
+
+        // Слушатель устанавливаем после инициализации начального состояния
+        remAutoRadioButton.setOnCheckedChangeListener { _, isChecked ->
+            settingsRepository.saveRemAutoMode(isChecked)
+            AppEventBus.tryEmit(AppEvent.RemSettingsChanged)
+            Log.d(TAG, "REM авто-режим: $isChecked")
         }
 
         applyButton.setOnClickListener {

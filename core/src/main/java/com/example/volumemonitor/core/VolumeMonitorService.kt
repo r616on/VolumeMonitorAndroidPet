@@ -17,6 +17,7 @@ import com.example.volumemonitor.core.event.AppEvent
 import com.example.volumemonitor.core.model.DeviceCommand
 import com.example.volumemonitor.core.model.VolumeControlMode
 import com.example.volumemonitor.core.notification.NotificationController
+import com.example.volumemonitor.core.rem.RemManager
 import com.example.volumemonitor.core.repository.SettingsRepository
 import com.example.volumemonitor.core.repository.SettingsRepositoryImpl
 import com.example.volumemonitor.core.usb.UsbPortState
@@ -47,6 +48,9 @@ class VolumeMonitorService : Service() {
 
     // ── Активный режим управления громкостью ──
     private var activeMode: VolumeMode? = null
+
+    // ── Менеджер REM ──
+    private var remManager: RemManager? = null
 
     private val binder: IBinder = LocalBinder()
     private val serviceScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
@@ -194,6 +198,9 @@ class VolumeMonitorService : Service() {
         Log.d(TAG, "Режим управления: $savedModeId")
         activateMode(savedModeId)
 
+        // Запуск REM-менеджера, если настройка включена
+        updateRemManager()
+
         // ── Реактивные подписки ──
 
         // Данные от Arduino
@@ -220,6 +227,9 @@ class VolumeMonitorService : Service() {
                     is AppEvent.VolumeControlModeChanged -> {
                         Log.d(TAG, "Режим управления изменён на: ${event.mode}")
                         activateMode(event.mode)
+                    }
+                    is AppEvent.RemSettingsChanged -> {
+                        updateRemManager()
                     }
                     else -> { /* остальные события обрабатываются внутри режимов */ }
                 }
@@ -257,10 +267,29 @@ class VolumeMonitorService : Service() {
         }
     }
 
+    private fun updateRemManager() {
+        val enabled = settingsRepository.getRemAutoMode()
+        Log.d(TAG, "updateRemManager: autoMode=$enabled")
+        if (enabled) {
+            if (remManager == null) {
+                remManager = RemManager(
+                    context = this,
+                    commandSender = rawCommandSender,  // без debounce
+                    appEvents = AppEventBus.events
+                ).also { it.start() }
+            }
+        } else {
+            remManager?.stop()
+            remManager = null
+        }
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         Log.d(TAG, "=== Уничтожение сервиса ===")
         (commandSender as? VolumeMemoManager)?.cancelPending()
+        remManager?.stop()
+        remManager = null
         activeMode?.stop()
         serviceScope.cancel()
         try { unregisterReceiver(usbReceiver) } catch (_: Exception) {}

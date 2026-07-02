@@ -57,4 +57,8 @@ object Constants {
     const val KEY_MATRIX_BUTTON_5 = "matrix_button_5"
     const val KEY_MATRIX_BUTTON_6 = "matrix_button_6"
     const val MATRIX_BUTTON_COUNT = 6
+
+    // ── REM ──
+    const val KEY_REM_AUTO_MODE = "rem_auto_mode"
+    const val DEFAULT_REM_AUTO_MODE = false
 }

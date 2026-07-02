@@ -64,6 +64,15 @@ sealed class DeviceCommand {
         override fun toJson() = """{"command":"$commandName","value":$value}"""
     }
 
+    /** Включить/выключить REM на устройстве. */
+    data class ChangeRem(val enable: Boolean) : DeviceCommand() {
+        override val commandName = "change_rem"
+        override fun toJson(): String {
+            val value = if (enable) "enable" else "disable"
+            return """{"command":"$commandName","value":"$value"}"""
+        }
+    }
+
     // ── Фреймирование ────────────────────────────────────────
 
     companion object {

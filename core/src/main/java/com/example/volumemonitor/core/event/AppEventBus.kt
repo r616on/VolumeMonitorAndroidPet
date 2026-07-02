@@ -69,4 +69,7 @@ sealed class AppEvent {
 
     /** Нажатие кнопки «Пресет +» (физической или экранной). */
     object PresetNextPressed : AppEvent()
+
+    /** Настройка автоматического управления REM изменена. */
+    object RemSettingsChanged : AppEvent()
 }

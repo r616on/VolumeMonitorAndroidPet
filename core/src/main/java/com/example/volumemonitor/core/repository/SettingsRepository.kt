@@ -45,4 +45,8 @@ interface SettingsRepository {
     // ── SetVolumeMemo ──
     fun getLastMemoVolume(): Int
     fun saveLastMemoVolume(volume: Int)
+
+    // ── REM ──
+    fun getRemAutoMode(): Boolean
+    fun saveRemAutoMode(enabled: Boolean)
 }
